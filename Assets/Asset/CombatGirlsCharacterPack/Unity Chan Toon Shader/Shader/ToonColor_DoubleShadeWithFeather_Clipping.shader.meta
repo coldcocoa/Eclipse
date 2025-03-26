@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: ccd13b7f8710b264ea8bd3bc4f51f9e4
+timeCreated: 1482812523
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 305180
+  packageName: CombatGirls_RifleCharacterPack
+  packageVersion: 1.0.2
+  assetPath: Assets/CombatGirlsCharacterPack/Unity Chan Toon Shader/Shader/ToonColor_DoubleShadeWithFeather_Clipping.shader
+  uploadId: 729874

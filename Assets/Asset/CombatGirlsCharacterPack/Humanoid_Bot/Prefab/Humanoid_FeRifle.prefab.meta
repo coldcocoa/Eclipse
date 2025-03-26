@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: b16264279b8988f4a8ba279856e2e031
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 305180
+  packageName: CombatGirls_RifleCharacterPack
+  packageVersion: 1.0.2
+  assetPath: Assets/CombatGirlsCharacterPack/Humanoid_Bot/Prefab/Humanoid_FeRifle.prefab
+  uploadId: 729874

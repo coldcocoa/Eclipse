@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: f81fa2f688f63eb4e97bb8f8f6ec0d9d
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 305180
+  packageName: CombatGirls_RifleCharacterPack
+  packageVersion: 1.0.2
+  assetPath: Assets/CombatGirlsCharacterPack/RifleGirl/Materials/Body/Eye.mat
+  uploadId: 729874

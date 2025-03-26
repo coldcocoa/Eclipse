@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 8b5263b606e15274bacb74b0273cbddc
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 305180
+  packageName: CombatGirls_RifleCharacterPack
+  packageVersion: 1.0.2
+  assetPath: Assets/CombatGirlsCharacterPack/RifleGirl/Prefab/Prefab_Parts/Rifle_Body.prefab
+  uploadId: 729874

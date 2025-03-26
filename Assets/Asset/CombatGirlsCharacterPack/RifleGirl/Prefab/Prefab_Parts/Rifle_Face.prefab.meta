@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 5c8a0c1df4ac4564c8aadc6b785633cc
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 305180
+  packageName: CombatGirls_RifleCharacterPack
+  packageVersion: 1.0.2
+  assetPath: Assets/CombatGirlsCharacterPack/RifleGirl/Prefab/Prefab_Parts/Rifle_Face.prefab
+  uploadId: 729874
