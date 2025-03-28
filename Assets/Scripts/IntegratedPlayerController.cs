@@ -3,22 +3,17 @@ using UnityEngine.UI;
 
 public class IntegratedPlayerController : MonoBehaviour
 {
-    [Header("Ä³¸¯ÅÍ ¿òÁ÷ÀÓ ¼³Á¤")]
-    [SerializeField] private float moveSpeed = 5f;      // ÀÏ¹İ °È±â ¼Óµµ
-    [SerializeField] private float sprintSpeed = 10f;   // ´Ş¸®±â(Shift)
-    [SerializeField] private float crouchSpeed = 2f;    // ¾É¾Æ¼­ °È±â ¼Óµµ
-    [SerializeField] private float crouchJogSpeed = 4f; // ¾É¾Æ¼­ ºü¸¥ ÀÌµ¿ ¼Óµµ
+    [Header("ì´ë™ ì†ë„ ì„¤ì •")]
+    [SerializeField] private float moveSpeed = 5f;      // ì¼ë°˜ ì´ë™ ì†ë„
+    [SerializeField] private float sprintSpeed = 10f;   // ë‹¬ë¦¬ê¸°(Shift)
+    [SerializeField] private float crouchSpeed = 2f;    // ì•‰ì•„ì„œ ì´ë™ ì†ë„
+    [SerializeField] private float crouchJogSpeed = 4f; // ì•‰ì•„ì„œ ë‹¬ë¦¬ê¸° ì†ë„
     [SerializeField] private float gravityValue = -9.81f;
 
-    [Header("Ä«¸Ş¶ó ¼³Á¤")]
-    [SerializeField] private Transform cameraHolder;
-    [SerializeField] private float cameraSensitivity = 2f;
-    [SerializeField] private Vector2 cameraYRotationLimit = new Vector2(-40, 70);
-
-    [Header("¾Ö´Ï¸ŞÀÌ¼Ç ¼³Á¤")]
+    [Header("ì• ë‹ˆë©”ì´ì…˜ ì„¤ì •")]
     [SerializeField] private Animator animator;
 
-    [Header("Ã¼·Â & ½ºÅÂ¹Ì³ª")]
+    [Header("ì²´ë ¥ & ìŠ¤íƒœë¯¸ë‚˜")]
     [SerializeField] private float maxHP = 100f;
     [SerializeField] private float currentHP = 100f;
     [SerializeField] private float maxStamina = 50f;
@@ -27,44 +22,40 @@ public class IntegratedPlayerController : MonoBehaviour
     [SerializeField] private float staminaRecoverRate = 3f;
 
     [Header("UI")]
-    [SerializeField] private Image hpBar;       // HP¹Ù (Fill)
-    [SerializeField] private Image staminaBar;  // ½ºÅÂ¹Ì³ª ¹Ù (Fill)
+    [SerializeField] private Image hpBar;       // HPë°” (Fill)
+    [SerializeField] private Image staminaBar;  // ìŠ¤íƒœë¯¸ë‚˜ ë°” (Fill)
 
-    // Ä³¸¯ÅÍ ÄÁÆ®·Ñ·¯ ¹× Ä«¸Ş¶ó
+    // ìºë¦­í„° ì»¨íŠ¸ë¡¤ëŸ¬
     private CharacterController controller;
-    private Transform playerCamera;
 
-    // Ä«¸Ş¶ó È¸Àü Á¦¾î
-    private float cameraRotationX = 0f;
-
-    // ÀÌµ¿ °ü·Ã
+    // ì´ë™ ê´€ë ¨
     private Vector3 playerVelocity;
     private bool isGrounded;
     private bool isSprinting;
     private bool isCrouching;
 
-    // ¡°ÇöÀç ¡®¿¡ÀÌ¹Ö ¸ğµå¡¯ÀÎ°¡¡±¸¦ ³ªÅ¸³»´Â ÇÃ·¡±×
+    // ì¡°ì¤€ ê´€ë ¨ ìƒíƒœ
     private bool isAiming = false;
     private bool isShooting = false;
 
-    // ½Ã°£ °ü·Ã
-    private float lastShootTime = 0f;   // ¸¶Áö¸·À¸·Î ÃÑÀ» ½ğ ½ÃÁ¡
-    private float takeStartTime = 0f;   // ¡®Take¡¯ ¾Ö´Ï¸ŞÀÌ¼Ç ½ÃÀÛ ½ÃÁ¡
+    // ì‹œê°„ ê´€ë ¨
+    private float lastShootTime = 0f;   // ë§ˆì§€ë§‰ìœ¼ë¡œ ìœ ì‹œê°„
+    private float takeStartTime = 0f;   // 'Take' ì• ë‹ˆë©”ì´ì…˜ ì‹œì‘ ì‹œê°„
 
-    // ¡á¡á¡á ¿­°ÅÇü: Normal / Aiming °¢°¢ ¼¼ºÎ »óÅÂ ³ª´® ¡á¡á¡á
+    // ì• ë‹ˆë©”ì´ì…˜ ìƒíƒœ ì—´ê±°í˜•
     public enum PlayerAnimState
     {
-        // --- Normal ÂÊ ---
+        // --- Normal ìƒíƒœ ---
         NormalIdle,
         Walk,
         Run,
         CrouchIdle,
         CrouchWalk,
         CrouchJog,
-        Take,          // ³ë¸» -> ¿¡ÀÌ¹Ö ÀüÈ¯
-        Die1,          // Ã¼·Â 0½Ã »ç¸Á
+        Take,          // ë¸Œë ˆì´í¬ -> ì´ ë³€í™˜
+        Die1,          // ì²´ë ¥ 0% ìƒíƒœ
 
-        // --- Aiming ÂÊ ---
+        // --- Aiming ìƒíƒœ ---
         AimIdle,
         AimShoot,
         AimJog,        // Shift+W
@@ -72,31 +63,24 @@ public class IntegratedPlayerController : MonoBehaviour
         AimWalkB,      // S
         AimWalkR,      // D
         AimWalkL,      // A
-        AimCrouchIdle, // Aim »óÅÂ + Ctrl
+        AimCrouchIdle, // Aim ìƒíƒœ + Ctrl
         AimCrouchWalk, // Aim + Ctrl + W
-        AimCrouchShoot // Aim + Ctrl + ÁÂÅ¬¸¯
+        AimCrouchShoot // Aim + Ctrl + ì´ ë°œì‚¬
     }
 
     private PlayerAnimState currentAnimState = PlayerAnimState.NormalIdle;
 
-    // ¾Ö´Ï¸ŞÀÌÅÍ ÆÄ¶ó¹ÌÅÍ
-    //private readonly string ANIM_PARAM_STATE = "AnimState";
+    // ì• ë‹ˆë©”ì´ì…˜ íŒŒë¼ë¯¸í„° ì´ë¦„
     private readonly string ANIM_PARAM_SPEED = "Speed";
 
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
-        var cam = Camera.main;
-        if (cam != null) playerCamera = cam.transform;
 
         if (animator == null)
             animator = GetComponent<Animator>();
 
-        // ¸¶¿ì½º Àá±İ
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-
-        // HP, Stamina ÃÊ±âÈ­
+        // HP, Stamina ì´ˆê¸°í™”
         currentHP = maxHP;
         currentStamina = maxStamina;
     }
@@ -105,75 +89,70 @@ public class IntegratedPlayerController : MonoBehaviour
     {
         isGrounded = controller.isGrounded;
 
-        // ------ ÀÌµ¿ Ã³¸® ------
+        // ------ ì´ë™ ì²˜ë¦¬ ------
         ProcessMovement();
         ApplyGravity();
 
-        // ------ Ä«¸Ş¶ó Ã³¸® ------
-        HandleCameraRotation();
-        UpdateCameraPosition();
-
-        // ------ HP / ½ºÅÂ¹Ì³ª ------
+        // ------ HP / ìŠ¤íƒœë¯¸ë‚˜ ------
         HandleStamina();
         HandleHP();
 
-        // ------ ¸¶¿ì½º/Å°º¸µå ÀÔ·Â ------
+        // ------ ë§ˆìš°ìŠ¤/í‚¤ë³´ë“œ ì…ë ¥ ------
         HandleInput();
 
-        // ------ Normal / Aiming »óÅÂ ºĞ±â ------
+        // ------ Normal / Aiming ìƒíƒœ íŒë³„ ------
         if (!isAiming)
         {
-            // Normal ¸ğµå
+            // Normal ìƒíƒœ
             UpdateNormalState();
         }
         else
         {
-            // Aiming ¸ğµå
+            // Aiming ìƒíƒœ
             UpdateAimingState();
         }
 
-        // ------ HUD ¾÷µ¥ÀÌÆ® ------
+        // ------ HUD ì—…ë°ì´íŠ¸ ------
         UpdateHUD();
 
-        // ------ ÃÖÁ¾ ¾Ö´Ï¸ŞÀÌ¼Ç Àû¿ë ------
+        // ------ í˜„ì¬ ì• ë‹ˆë©”ì´ì…˜ ì ìš© ------
         ApplyAnimationState();
     }
 
     // =========================================================
-    //  ³ë¸» »óÅÂ Ã³¸®
+    //  ë¸Œë ˆì´í¬ ì²˜ë¦¬
     // =========================================================
     private void UpdateNormalState()
     {
-        // 1) ¡®Take¡¯ ¾Ö´Ï¸ŞÀÌ¼Ç ÁßÀÎÁö ¿©ºÎ
+        // 1) Take ì• ë‹ˆë©”ì´ì…˜ ì‹œì‘ í›„ ì§€ë‚œ ì‹œê°„ í™•ì¸
         if (currentAnimState == PlayerAnimState.Take)
         {
-            // Take ¾Ö´Ï¸ŞÀÌ¼ÇÀÌ ³¡³µ´Ù¸é => AimIdle·Î ÀüÈ¯
-            // ¿©±â¼± ¡°1ÃÊ¡±¶ó°í °¡Á¤
+            // Take ì• ë‹ˆë©”ì´ì…˜ì´ ëë‚˜ë©´ => AimIdleë¡œ ë³€í™˜
+            // ìµœì†Œ 1ì´ˆ ì´ìƒ ì§€ë‚˜ì•¼ í•¨
             if (Time.time - takeStartTime > 1f)
             {
-                isAiming = true; // ÀÌÁ¦ ¿¡ÀÌ¹Ö ¸ğµå ÀüÈ¯
+                isAiming = true; // ì´ ë³€í™˜ í›„ ì´ ë°œì‚¬ ê°€ëŠ¥
                 SetAnimationState(PlayerAnimState.AimIdle);
             }
             return;
         }
 
-        // 2) ¡°10ÃÊ ³»¿¡¼­¸¸ NormalIdle ¹ßµ¿¡± Á¶°Ç
-        //    ¿¹: ¸¶Áö¸· »ç°İ ½ÃÁ¡(lastShootTime)À¸·ÎºÎÅÍ 10ÃÊ°¡ ³ÑÀ¸¸é Idle ºÒ°¡ µî
-        //    ¿©±â¼­´Â ´Ü¼øÈ÷ ¡°»ç°İ ÈÄ 10ÃÊ ÀÌ³»¸é Idle °¡´É¡±ÀÌ¶ó°í °¡Á¤
+        // 2) 10ì´ˆ ì´ìƒ ì§€ë‚œ í›„ NormalIdle ìƒíƒœë¡œ ë³€í™˜
+        //    ì˜ˆ: ì´ ë°œì‚¬ í›„ 10ì´ˆ ì´ìƒ ì§€ë‚˜ë©´ Idle ìƒíƒœë¡œ ë³€í™˜
         float timeSinceShoot = Time.time - lastShootTime;
 
-        // 3) ÀÌµ¿/ÀÔ·Â Ã¼Å©ÇØ¼­ »óÅÂ °áÁ¤
+        // 3) ì´ë™/ì¡°ì¤€ ì…ë ¥ ì²˜ë¦¬
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
 
-        // crouch ¼¼ºĞÈ­: Idle / Walk / Jog
+        // crouch ìƒíƒœ ì´ˆê¸°í™”: Idle / Walk / Jog
         if (isCrouching)
         {
             bool shiftPressed = Input.GetKey(KeyCode.LeftShift);
 
             if (Mathf.Abs(h) < 0.1f && Mathf.Abs(v) < 0.1f)
             {
-                // Á¦ÀÚ¸® ¾É±â
+                // í‚¤ ì…ë ¥ ì´ˆê¸°í™”
                 SetAnimationState(PlayerAnimState.CrouchIdle);
             }
             else
@@ -192,7 +171,7 @@ public class IntegratedPlayerController : MonoBehaviour
         }
         else
         {
-            // ¾É¾ÆÀÖÁö ¾ÊÀ¸¸é Normal Idle / Walk / Run
+            // ì•‰ì•„ì„œ ì´ë™ ìƒíƒœ Normal Idle / Walk / Run
             // SHIFT + W => Run
             bool forwardPressed = (v > 0.1f);
             if (forwardPressed && isSprinting)
@@ -206,43 +185,43 @@ public class IntegratedPlayerController : MonoBehaviour
             else
             {
                 // IDLE
-                // ¡°10ÃÊ ÀÌ³»¸¸ Idle °¡´É¡±ÀÌ¶ó¸é? 
-                // ¿©±â¼­´Â 10ÃÊ°¡ ³Ñ¾úÀ¸¸é Idle ¸ø °£´Ù°í °¡Á¤(¶Ç´Â ´Ù¸¥ Ã³¸®)
+                // 10ì´ˆ ì´ìƒ ì§€ë‚œ Idle ìƒíƒœë¡œ ë³€í™˜ ê°€ëŠ¥? 
+                // ìµœì†Œ 10ì´ˆ ì´ìƒ ì§€ë‚˜ë©´ Idle ìƒíƒœë¡œ ë³€í™˜ í•„ìš”(ì˜ˆì™¸ ì²˜ë¦¬)
                 if (timeSinceShoot <= 10f)
                 {
                     SetAnimationState(PlayerAnimState.NormalIdle);
                 }
-                // timeSinceShoot > 10f ¶ó¸é, Idle ´ë½Å ´Ù¸¥ »óÅÂ À¯ÁöÇÒ ¼öµµ ÀÖÀ½
+                // timeSinceShoot > 10f ì´ë©´, Idle ìƒíƒœë¡œ ë³€í™˜ í•„ìš” ì‹œ ë³€í™˜ í›„ ì²˜ë¦¬ í•„ìš”
             }
         }
     }
 
     // =========================================================
-    //  ¿¡ÀÌ¹Ö »óÅÂ Ã³¸®
+    //  ì´ ì²˜ë¦¬
     // =========================================================
     private void UpdateAimingState()
     {
-        // 1) ¡°6ÃÊ°£ ÁÂÅ¬¸¯ ¾È ÇÏ¸é ³ë¸» º¹±Í¡±
+        // 1) 6ì´ˆ ì´ìƒ ì§€ë‚œ í›„ ì´ ë°œì‚¬ ê°€ëŠ¥
         if (Time.time - lastShootTime > 6f)
         {
-            // ¿¡ÀÌ¹Ö ¸ğµå ÇØÁ¦
+            // ì´ ë°œì‚¬ ë¶ˆê°€ëŠ¥
             isAiming = false;
-            // ³ë¸» Idle ·Î º¹±Í
+            // ë¸Œë ˆì´í¬ Idle ìƒíƒœë¡œ ë³€í™˜
             SetAnimationState(PlayerAnimState.NormalIdle);
             return;
         }
 
-        // 2) crouch ¿©ºÎ
+        // 2) crouch ìƒíƒœ
         bool isCtrl = Input.GetKey(KeyCode.LeftControl);
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
 
-        // 3) ÁÂÅ¬¸¯ ½Ã Shoot (¿¡ÀÌ¹Ö ÀÚ¼¼¿¡¼­)
-        //    ÀÌ¹Ì HandleInput()¿¡¼­ lastShootTime °»½Å, isShooting = true ¼¼ÆÃ
-        //    ¾Æ·¡¿¡¼± »óÅÂ¸¸ ¹Ù²ãÁÜ
+        // 3) ì´ ë°œì‚¬ (ì´ ë°œì‚¬ ì…ë ¥ ì²˜ë¦¬)
+        //    ì´ ë°œì‚¬ HandleInput() ë©”ì„œë“œì—ì„œ lastShootTime ì²˜ë¦¬, isShooting = true ì²˜ë¦¬
+        //    í•¨ìˆ˜ ë‚´ì—ì„œ ì²˜ë¦¬ í•„ìš”
         if (isShooting)
         {
-            // ¾É¾ÆÀÖÀ¸¸é AimCrouchShoot, ¾Æ´Ï¸é AimShoot
+            // ì´ ë°œì‚¬ í›„ AimCrouchShoot, ì•„ë‹ˆë©´ AimShoot
             if (isCtrl)
             {
                 SetAnimationState(PlayerAnimState.AimCrouchShoot);
@@ -251,39 +230,39 @@ public class IntegratedPlayerController : MonoBehaviour
             {
                 SetAnimationState(PlayerAnimState.AimShoot);
             }
-            // ÇÑ ¹ø¸¸ Ã³¸®
+            // ì´ ë°œì‚¬ ì²˜ë¦¬ í•„ìš”
             isShooting = false;
             return;
         }
 
-        // 4) ÀÌµ¿ ¹æÇâ + Shift È®ÀÎÇØ¼­ AimJog / AimWalkF/B/R/L µî ºĞ±â
+        // 4) ì´ë™ ì²˜ë¦¬ + Shift ì…ë ¥ ì²˜ë¦¬ AimJog / AimWalkF/B/R/L ìƒíƒœ íŒë³„
         bool shiftPressed = Input.GetKey(KeyCode.LeftShift);
 
         if (isCtrl)
         {
-            // ¾ÉÀº ¿¡ÀÌ¹Ö
+            // ì´ ë°œì‚¬ ìƒíƒœ
             if (Mathf.Abs(h) < 0.1f && Mathf.Abs(v) < 0.1f)
             {
-                // Á¦ÀÚ¸® ¾É±â
+                // í‚¤ ì…ë ¥ ì´ˆê¸°í™”
                 SetAnimationState(PlayerAnimState.AimCrouchIdle);
             }
             else
             {
-                // °È±â
+                // ì¼ë°˜ ì´ë™ ìƒíƒœ
                 SetAnimationState(PlayerAnimState.AimCrouchWalk);
             }
         }
         else
         {
-            // ¼­ ÀÖ´Â ¿¡ÀÌ¹Ö
+            // ì¼ë°˜ ì´ë™ ìƒíƒœ
             if (shiftPressed && v > 0.1f)
             {
-                // ¾ÕÀ¸·Î Á¶±ë
+                // ì´ ë°œì‚¬ ìƒíƒœ
                 SetAnimationState(PlayerAnimState.AimJog);
             }
             else
             {
-                // ¹æÇâº°·Î AimWalkF/B/L/R
+                // ì˜ˆì™¸ ìƒíƒœ AimWalkF/B/L/R
                 if (v > 0.1f)
                 {
                     SetAnimationState(PlayerAnimState.AimWalkF);
@@ -309,37 +288,36 @@ public class IntegratedPlayerController : MonoBehaviour
     }
 
     // =========================================================
-    //  ÀÌµ¿ / Áß·Â Ã³¸®
+    //  ì´ë™ / ì¡°ì¤€ ì²˜ë¦¬
     // =========================================================
     private void ProcessMovement()
     {
-        // ´Ş¸®´Â ÁßÀÌ¸é sprintSpeed, ¾É¾ÆÀÖÀ¸¸é Á¶±İ¾¿ ´Ù¸¥ ¼Óµµ·Î
+        // ë‹¬ë¦¬ê¸° ì†ë„ ì²˜ë¦¬
         float finalSpeed = moveSpeed;
 
-        // ³ë¸»¿¡¼­ Shift => Run
+        // ë¸Œë ˆì´í¬ ì²˜ë¦¬
         if (!isAiming && isSprinting)
         {
             finalSpeed = sprintSpeed;
         }
 
-        // ¾É¾ÆÀÖÀ» ¶§
+        // ì•‰ì•„ì„œ ì´ë™ ì²˜ë¦¬
         if (isCrouching)
         {
-            // AimingÀÌµç ³ë¸»ÀÌµç ¡°¾É¾Æ¼­ °È±â ¼Óµµ¡±¸¦ ¿ì¼± º£ÀÌ½º·Î
+            // Aiming ì´ë™ ì²˜ë¦¬ ì•‰ì•„ì„œ ì´ë™ ì†ë„ ì²˜ë¦¬
             finalSpeed = crouchSpeed;
-            // È¤½Ã ¡°CrouchJog¡± »óÅÂ¶ó¸é crouchJogSpeed¸¦ ¾µ ¼öµµ ÀÖÀ½
-            // (Shift+Ctrl+W µî)
+            // ì˜ˆì™¸ ì²˜ë¦¬ CrouchJog ì²˜ë¦¬
+            // (Shift+Ctrl+W ì²˜ë¦¬)
             if (isSprinting)
             {
                 finalSpeed = crouchJogSpeed;
             }
         }
 
-        // ¿¡ÀÌ¹Ö ÁßÀÌÁö¸¸ Shift+W => AimJog¶ó¸é
-        // (½ÇÁ¦·Ğ ÀÌµ¿¼Óµµ ¾à°£ ´Ù¸£°Ô ÇÒ ¼öµµ ÀÖÀ½)
+        // ì´ ë°œì‚¬ ì²˜ë¦¬
         if (isAiming)
         {
-            // ÇÊ¿äÇÏ´Ù¸é ¡°Á¶ÁØ Áß ¼Óµµ °¨¼Ò¡± °°Àº °Í Àû¿ë °¡´É
+            // ì´ ë°œì‚¬ ì¤‘ì¼ ë•Œ ì†ë„ ì²˜ë¦¬
             // ex) finalSpeed *= 0.8f;
         }
 
@@ -363,21 +341,21 @@ public class IntegratedPlayerController : MonoBehaviour
     }
 
     // =========================================================
-    //  Å° ÀÔ·Â: ÁÂÅ¬¸¯À¸·Î Take, ¿¡ÀÌ¹Ö Áß »ç°İ, etc.
+    // ë§ˆìš°ìŠ¤/í‚¤ë³´ë“œ ì…ë ¥: ì´ ë°œì‚¬, Take, etc.
     // =========================================================
     private void HandleInput()
     {
-        // ½ºÇÁ¸°Æ® & Å©¶ó¿ìÄ¡
+        // ì…ë ¥ ì²˜ë¦¬ & ì²´ë ¥ ì²˜ë¦¬
         isSprinting = Input.GetKey(KeyCode.LeftShift);
         isCrouching = Input.GetKey(KeyCode.LeftControl);
 
-        // ÁÂÅ¬¸¯
+        // ì´ ë°œì‚¬
         if (Input.GetMouseButtonDown(0))
         {
             if (!isAiming)
             {
-                // ³ë¸» »óÅÂ¿¡¼­ ÁÂÅ¬¸¯ => Take ¾Ö´Ï¸ŞÀÌ¼Ç
-                // (´Ü, ÀÌ¹Ì »ç¸Á »óÅÂ°¡ ¾Æ´Ï¶ó´Â ÀüÁ¦)
+                // ë¸Œë ˆì´í¬ ì´ ë°œì‚¬ => Take ì• ë‹ˆë©”ì´ì…˜
+                // (ì˜ˆ: ì´ ë°œì‚¬ í›„ ì²´ë ¥ ê°ì†Œ ì²˜ë¦¬)
                 if (currentAnimState != PlayerAnimState.Die1)
                 {
                     StartTakeAnimation();
@@ -385,7 +363,7 @@ public class IntegratedPlayerController : MonoBehaviour
             }
             else
             {
-                // ¿¡ÀÌ¹Ö Áß ÁÂÅ¬¸¯ => Shoot
+                // ì´ ë°œì‚¬ => Shoot
                 isShooting = true;
                 lastShootTime = Time.time;
             }
@@ -399,25 +377,26 @@ public class IntegratedPlayerController : MonoBehaviour
     }
 
     // =========================================================
-    //  HP / ½ºÅÂ¹Ì³ª Ã³¸®
+    //  HP / ìŠ¤íƒœë¯¸ë‚˜ ì²˜ë¦¬
     // =========================================================
     private void HandleStamina()
     {
-        // ´Ş¸®±â Áß(Shift)¶ó¸é °¨¼Ò
-        // ´Ü, ÀÌµ¿ ÀÔ·ÂÀÌ ÀÖ´ÂÁö magnitude·Î Ã¼Å©
+        // ë‹¬ë¦¬ê¸° ì²˜ë¦¬
+        // ì˜ˆ: Shift ì…ë ¥ ì‹œ ì²´ë ¥ ê°ì†Œ
+        // ì²´ë ¥ ì²˜ë¦¬ í•¨ìˆ˜ì—ì„œ ì²˜ë¦¬ í•„ìš”
         if (isSprinting && controller.velocity.magnitude > 0.1f)
         {
             currentStamina -= staminaDecreaseRate * Time.deltaTime;
             if (currentStamina < 0f)
             {
                 currentStamina = 0f;
-                // ½ºÅÂ¹Ì³ª°¡ 0ÀÌ¸é ´õ ´Ş¸± ¼ö ¾øÀ½
+                // ìŠ¤íƒœë¯¸ë‚˜ 0% ì´ë©´ ë‹¬ë¦¬ê¸° ë¶ˆê°€ëŠ¥
                 isSprinting = false;
             }
         }
         else
         {
-            // È¸º¹
+            // ì¬ìƒ
             currentStamina += staminaRecoverRate * Time.deltaTime;
             if (currentStamina > maxStamina)
                 currentStamina = maxStamina;
@@ -428,7 +407,7 @@ public class IntegratedPlayerController : MonoBehaviour
     {
         if (currentHP <= 0f)
         {
-            // ÀÌ¹Ì Die1 »óÅÂ°¡ ¾Æ´Ï¸é »ç¸Á Ã³¸®
+            // ì´ Die1 ìƒíƒœë¡œ ë³€í™˜ í›„ ì²˜ë¦¬
             if (currentAnimState != PlayerAnimState.Die1)
             {
                 SetAnimationState(PlayerAnimState.Die1);
@@ -436,54 +415,31 @@ public class IntegratedPlayerController : MonoBehaviour
         }
     }
 
-    // ¿ÜºÎ¿¡¼­ µ¥¹ÌÁö ÁÖ´Â ÇÔ¼ö
+    // ê³µí†µ í•¨ìˆ˜ ì²˜ë¦¬ í•¨ìˆ˜
     public void TakeDamage(float dmg)
     {
-        if (currentAnimState == PlayerAnimState.Die1) return; // ÀÌ¹Ì »ç¸Á
+        if (currentAnimState == PlayerAnimState.Die1) return; // ì´ ì²˜ë¦¬ ë¶ˆê°€ëŠ¥
 
         currentHP -= dmg;
         if (currentHP < 0f) currentHP = 0f;
     }
 
     // =========================================================
-    //  Ä«¸Ş¶ó È¸Àü & À§Ä¡
-    // =========================================================
-    private void HandleCameraRotation()
-    {
-        float mouseX = Input.GetAxis("Mouse X") * cameraSensitivity;
-        float mouseY = Input.GetAxis("Mouse Y") * cameraSensitivity;
-
-        // »óÇÏ È¸Àü
-        cameraRotationX -= mouseY;
-        cameraRotationX = Mathf.Clamp(cameraRotationX, cameraYRotationLimit.x, cameraYRotationLimit.y);
-        cameraHolder.localRotation = Quaternion.Euler(cameraRotationX, 0f, 0f);
-
-        // ÁÂ¿ì È¸Àü
-        transform.Rotate(Vector3.up, mouseX);
-    }
-
-    private void UpdateCameraPosition()
-    {
-        playerCamera.position = cameraHolder.position;
-        playerCamera.rotation = cameraHolder.rotation;
-    }
-
-    // =========================================================
-    //  ÃÖÁ¾ÀûÀ¸·Î Animator¿¡ ÆÄ¶ó¹ÌÅÍ ÁÖÀÔ
+    // ì• ë‹ˆë©”ì´ì…˜ Animator íŒŒë¼ë¯¸í„° ì²˜ë¦¬
     // =========================================================
     private void ApplyAnimationState()
     {
-        // ÀÌµ¿¼Óµµ(ÁÂ¿ìxz¸¸)
+        // ì´ë™ ì†ë„(ì¼ë°˜ xz)
         Vector3 horizontalVel = new Vector3(controller.velocity.x, 0, controller.velocity.z);
         float speedValue = horizontalVel.magnitude;
 
         animator.SetFloat(ANIM_PARAM_SPEED, speedValue);
 
-        // ½ÇÁ¦ ¾Ö´Ï¸ŞÀÌ¼Ç »óÅÂ¿¡ µû¶ó Animator ÆÄ¶ó¹ÌÅÍ(AnimState) ¼¼ÆÃ
-        // ¾Æ·¡ ¼ıÀÚ´Â ¿¹½ÃÀÌ¸ç, ½ÇÁ¦ Animator¿¡¼­ ¼³Á¤ÇÑ ´ë·Î ¸ÂÃß½Ã¸é µË´Ï´Ù.
+        // ì• ë‹ˆë©”ì´ì…˜ ì²˜ë¦¬ í•¨ìˆ˜ì—ì„œ Animator íŒŒë¼ë¯¸í„°(AnimState) ì²˜ë¦¬
+        // ì£¼ì˜: ì• ë‹ˆë©”ì´ì…˜ í•¨ìˆ˜ ë‚´ì—ì„œ ì²˜ë¦¬ í•„ìš”.
         switch (currentAnimState)
         {
-            // ---------- Normal ÂÊ ----------
+            // ---------- Normal ìƒíƒœ ----------
             case PlayerAnimState.NormalIdle:
                 animator.SetTrigger("IDLE");
                 break;
@@ -509,13 +465,13 @@ public class IntegratedPlayerController : MonoBehaviour
                 animator.SetTrigger("DIE1");
                 break;
 
-            // ---------- Aiming ÂÊ ----------
+            // ---------- Aiming ìƒíƒœ ----------
             case PlayerAnimState.AimIdle:
                 animator.SetTrigger("IDLE 0");
                 break;
             case PlayerAnimState.AimShoot:
                 animator.SetTrigger("SHOOT");
-                // Shoot Æ®¸®°Å°¡ ÇÊ¿äÇÏ´Ù¸é animator.SetTrigger("Shoot") Ãß°¡ °¡´É
+                // Shoot íŠ¸ë¦¬ê±° ì¶”ê°€ í•„ìš”
                 break;
             case PlayerAnimState.AimJog:
                 animator.SetTrigger("JOG");
@@ -540,13 +496,13 @@ public class IntegratedPlayerController : MonoBehaviour
                 break;
             case PlayerAnimState.AimCrouchShoot:
                 animator.SetTrigger("CROUCH SHOOT");
-                // ¸¶Âù°¡Áö·Î Shoot Æ®¸®°Å µî
+                // ì´ ë°œì‚¬ íŠ¸ë¦¬ê±° ì¶”ê°€ í•„ìš”
                 break;
         }
     }
 
     // =========================================================
-    //  »óÅÂ¸¦ ¹Ù²Ù´Â ÇÔ¼ö (enum °ª¸¸ º¯°æ)
+    //  ì• ë‹ˆë©”ì´ì…˜ ìƒíƒœ ë³€ê²½ í•¨ìˆ˜ (enum ìƒíƒœ ì²˜ë¦¬)
     // =========================================================
     private void SetAnimationState(PlayerAnimState newState)
     {
@@ -567,16 +523,5 @@ public class IntegratedPlayerController : MonoBehaviour
         {
             staminaBar.fillAmount = currentStamina / maxStamina;
         }
-    }
-
-    // =========================================================
-    //  µğ¹ö±×¿ë
-    // =========================================================
-    private void OnDrawGizmos()
-    {
-        if (!Application.isPlaying) return;
-
-        Gizmos.color = Color.red;
-        Gizmos.DrawLine(cameraHolder.position, playerCamera.position);
     }
 }

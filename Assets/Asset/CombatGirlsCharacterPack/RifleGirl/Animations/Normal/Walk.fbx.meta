@@ -1,7 +1,14 @@
 fileFormatVersion: 2
 guid: b7d86c75d3dffa04d889b5e80533d0d5
+AssetOrigin:
+  serializedVersion: 1
+  productId: 305180
+  packageName: CombatGirls_RifleCharacterPack
+  packageVersion: 1.0.2
+  assetPath: Assets/CombatGirlsCharacterPack/RifleGirl/Animations/Normal/Walk.fbx
+  uploadId: 729874
 ModelImporter:
-  serializedVersion: 21300
+  serializedVersion: 22200
   internalIDToNameTable:
   - first:
       74: 599494264617130908
@@ -19,8 +26,6 @@ ModelImporter:
     optimizeGameObjects: 0
     removeConstantScaleCurves: 1
     motionNodeName: root
-    rigImportErrors: 
-    rigImportWarnings: 
     animationImportErrors: 
     animationImportWarnings: 
     animationRetargetingWarnings: 
@@ -208,6 +213,7 @@ ModelImporter:
     addColliders: 0
     useSRGBMaterialColor: 1
     sortHierarchyByName: 1
+    importPhysicalCameras: 1
     importVisibility: 1
     importBlendShapes: 1
     importCameras: 0
@@ -235,6 +241,7 @@ ModelImporter:
     secondaryUVMinObjectScale: 1
     secondaryUVPackMargin: 4
     useFileScale: 1
+    strictVertexDataChecks: 0
   tangentSpace:
     normalSmoothAngle: 60
     normalImportMode: 0
@@ -1035,15 +1042,9 @@ ModelImporter:
   humanoidOversampling: 1
   avatarSetup: 2
   addHumanoidExtraRootOnlyWhenUsingAvatar: 1
+  importBlendShapeDeformPercent: 0
   remapMaterialsIfMaterialImportModeIsNone: 0
   additionalBone: 0
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-AssetOrigin:
-  serializedVersion: 1
-  productId: 305180
-  packageName: CombatGirls_RifleCharacterPack
-  packageVersion: 1.0.2
-  assetPath: Assets/CombatGirlsCharacterPack/RifleGirl/Animations/Normal/Walk.fbx
-  uploadId: 729874

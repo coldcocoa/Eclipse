@@ -285,6 +285,7 @@ GameObject:
   - component: {fileID: 499605949}
   - component: {fileID: 499605953}
   - component: {fileID: 499605952}
+  - component: {fileID: 499605954}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -378,9 +379,6 @@ MonoBehaviour:
   crouchSpeed: 2
   crouchJogSpeed: 4
   gravityValue: -9.81
-  cameraHolder: {fileID: 152025841}
-  cameraSensitivity: 1
-  cameraYRotationLimit: {x: -40, y: 70}
   animator: {fileID: 1876254931}
   maxHP: 100
   currentHP: 100
@@ -415,6 +413,21 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &499605954
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 499605947}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 326490c0516ca0f438076abca83538d0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  cameraHolder: {fileID: 152025841}
+  cameraSensitivity: 2
+  cameraYRotationLimit: {x: -40, y: 70}
 --- !u!1001 &711677431
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -435,6 +448,14 @@ PrefabInstance:
       propertyPath: m_Avatar
       value: 
       objectReference: {fileID: 9000000, guid: c0426d61788399a4aa9702989176ee68, type: 3}
+    - target: {fileID: 1228054427, guid: 9620196a5d390a64dbda2551f225ae81, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: 4ad96e5fcda3ae247917b3797ee66ef0, type: 2}
+    - target: {fileID: 1228054427, guid: 9620196a5d390a64dbda2551f225ae81, type: 3}
+      propertyPath: m_ApplyRootMotion
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2117110373, guid: 9620196a5d390a64dbda2551f225ae81, type: 3}
       propertyPath: m_IsActive
       value: 0
