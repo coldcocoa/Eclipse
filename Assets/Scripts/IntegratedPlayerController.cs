@@ -1,350 +1,581 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class IntegratedPlayerController : MonoBehaviour
 {
     [Header("캐릭터 움직임 설정")]
-    [SerializeField] private float moveSpeed = 5f;
-    [SerializeField] private float sprintSpeed = 10f;
-    [SerializeField] private float jumpForce = 5f;
+    [SerializeField] private float moveSpeed = 5f;      // 일반 걷기 속도
+    [SerializeField] private float sprintSpeed = 10f;   // 달리기(Shift)
+    [SerializeField] private float crouchSpeed = 2f;    // 앉아서 걷기 속도
+    [SerializeField] private float crouchJogSpeed = 4f; // 앉아서 빠른 이동 속도
     [SerializeField] private float gravityValue = -9.81f;
-    [SerializeField] private float rotationSpeed = 5f;
 
     [Header("카메라 설정")]
-    [SerializeField] private Transform cameraHolder;        // 카메라 기준 회전축(캐릭터 머리 근처)
+    [SerializeField] private Transform cameraHolder;
     [SerializeField] private float cameraSensitivity = 2f;
-    //[SerializeField] private float cameraDistance = 5f;     // 일반 상태일 때 카메라 거리
-    //[SerializeField] private float cameraHeight = 2f;       // 필요 시 사용 (현재는 cameraHolder 위치로 대체 가능)
     [SerializeField] private Vector2 cameraYRotationLimit = new Vector2(-40, 70);
 
     [Header("애니메이션 설정")]
     [SerializeField] private Animator animator;
 
-    // 캐릭터 컨트롤러 및 카메라 참조
+    [Header("체력 & 스태미나")]
+    [SerializeField] private float maxHP = 100f;
+    [SerializeField] private float currentHP = 100f;
+    [SerializeField] private float maxStamina = 50f;
+    [SerializeField] private float currentStamina = 50f;
+    [SerializeField] private float staminaDecreaseRate = 5f;
+    [SerializeField] private float staminaRecoverRate = 3f;
+
+    [Header("UI")]
+    [SerializeField] private Image hpBar;       // HP바 (Fill)
+    [SerializeField] private Image staminaBar;  // 스태미나 바 (Fill)
+
+    // 캐릭터 컨트롤러 및 카메라
     private CharacterController controller;
     private Transform playerCamera;
 
-    // 카메라 제어 변수
+    // 카메라 회전 제어
     private float cameraRotationX = 0f;
 
-    // 이동 관련 변수
+    // 이동 관련
     private Vector3 playerVelocity;
     private bool isGrounded;
     private bool isSprinting;
-    private bool isJumping;
     private bool isCrouching;
-    private bool isProne;
-    private bool isAiming;
-    private bool isShooting;
-    private bool isReloading;
 
-    // 애니메이션 상태 열거형
+    // “현재 ‘에이밍 모드’인가”를 나타내는 플래그
+    private bool isAiming = false;
+    private bool isShooting = false;
+
+    // 시간 관련
+    private float lastShootTime = 0f;   // 마지막으로 총을 쏜 시점
+    private float takeStartTime = 0f;   // ‘Take’ 애니메이션 시작 시점
+
+    // ■■■ 열거형: Normal / Aiming 각각 세부 상태 나눔 ■■■
     public enum PlayerAnimState
     {
-        Idle,
+        // --- Normal 쪽 ---
+        NormalIdle,
         Walk,
         Run,
-        Jump,
-        Fall,
-        Crouch,
-        Prone,
-        Aim,
-        Shoot,
-        Reload,
-        Hurt,
-        Death
+        CrouchIdle,
+        CrouchWalk,
+        CrouchJog,
+        Take,          // 노말 -> 에이밍 전환
+        Die1,          // 체력 0시 사망
+
+        // --- Aiming 쪽 ---
+        AimIdle,
+        AimShoot,
+        AimJog,        // Shift+W
+        AimWalkF,      // W
+        AimWalkB,      // S
+        AimWalkR,      // D
+        AimWalkL,      // A
+        AimCrouchIdle, // Aim 상태 + Ctrl
+        AimCrouchWalk, // Aim + Ctrl + W
+        AimCrouchShoot // Aim + Ctrl + 좌클릭
     }
 
-    // 현재 애니메이션 상태
-    private PlayerAnimState currentAnimState = PlayerAnimState.Idle;
+    private PlayerAnimState currentAnimState = PlayerAnimState.NormalIdle;
 
-    // 애니메이션 파라미터 이름
-    private readonly string ANIM_PARAM_STATE = "AnimState";
+    // 애니메이터 파라미터
+    //private readonly string ANIM_PARAM_STATE = "AnimState";
     private readonly string ANIM_PARAM_SPEED = "Speed";
-    private readonly string ANIM_PARAM_IS_GROUNDED = "IsGrounded";
-    private readonly string ANIM_PARAM_IS_AIMING = "IsAiming";
 
     private void Awake()
     {
-        // 필요한 컴포넌트 참조 가져오기
         controller = GetComponent<CharacterController>();
-        playerCamera = Camera.main.transform;
+        var cam = Camera.main;
+        if (cam != null) playerCamera = cam.transform;
 
         if (animator == null)
             animator = GetComponent<Animator>();
 
-        // 마우스 커서 잠금
+        // 마우스 잠금
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+
+        // HP, Stamina 초기화
+        currentHP = maxHP;
+        currentStamina = maxStamina;
     }
 
     private void Update()
     {
-        // 입력 및 상태 감지
-        ProcessInputs();
+        isGrounded = controller.isGrounded;
 
-        // 이동 처리
-        HandleMovement();
+        // ------ 이동 처리 ------
+        ProcessMovement();
+        ApplyGravity();
 
-        // 점프 처리
-        HandleJump();
-
-        // 카메라 회전 처리
+        // ------ 카메라 처리 ------
         HandleCameraRotation();
-
-        // 카메라 위치 업데이트
         UpdateCameraPosition();
 
-        // 애니메이션 상태 결정
-        DetermineAnimationState();
+        // ------ HP / 스태미나 ------
+        HandleStamina();
+        HandleHP();
 
-        // 애니메이션 적용
+        // ------ 마우스/키보드 입력 ------
+        HandleInput();
+
+        // ------ Normal / Aiming 상태 분기 ------
+        if (!isAiming)
+        {
+            // Normal 모드
+            UpdateNormalState();
+        }
+        else
+        {
+            // Aiming 모드
+            UpdateAimingState();
+        }
+
+        // ------ HUD 업데이트 ------
+        UpdateHUD();
+
+        // ------ 최종 애니메이션 적용 ------
         ApplyAnimationState();
     }
 
-    private void ProcessInputs()
+    // =========================================================
+    //  노말 상태 처리
+    // =========================================================
+    private void UpdateNormalState()
     {
-        // 기본 이동 및 액션 입력 감지
-        isGrounded = controller.isGrounded;
-        isSprinting = Input.GetKey(KeyCode.LeftShift);
-        isJumping = Input.GetButtonDown("Jump") && isGrounded;
-        isCrouching = Input.GetKey(KeyCode.C);
-        isProne = Input.GetKey(KeyCode.X);
-        isAiming = Input.GetMouseButton(1);  // 우클릭 조준
-        isShooting = Input.GetMouseButtonDown(0) && isAiming; // 좌클릭 발사 (조준 중)
-        isReloading = Input.GetKeyDown(KeyCode.R); // R키 재장전
+        // 1) ‘Take’ 애니메이션 중인지 여부
+        if (currentAnimState == PlayerAnimState.Take)
+        {
+            // Take 애니메이션이 끝났다면 => AimIdle로 전환
+            // 여기선 “1초”라고 가정
+            if (Time.time - takeStartTime > 1f)
+            {
+                isAiming = true; // 이제 에이밍 모드 전환
+                SetAnimationState(PlayerAnimState.AimIdle);
+            }
+            return;
+        }
+
+        // 2) “10초 내에서만 NormalIdle 발동” 조건
+        //    예: 마지막 사격 시점(lastShootTime)으로부터 10초가 넘으면 Idle 불가 등
+        //    여기서는 단순히 “사격 후 10초 이내면 Idle 가능”이라고 가정
+        float timeSinceShoot = Time.time - lastShootTime;
+
+        // 3) 이동/입력 체크해서 상태 결정
+        float h = Input.GetAxis("Horizontal");
+        float v = Input.GetAxis("Vertical");
+
+        // crouch 세분화: Idle / Walk / Jog
+        if (isCrouching)
+        {
+            bool shiftPressed = Input.GetKey(KeyCode.LeftShift);
+
+            if (Mathf.Abs(h) < 0.1f && Mathf.Abs(v) < 0.1f)
+            {
+                // 제자리 앉기
+                SetAnimationState(PlayerAnimState.CrouchIdle);
+            }
+            else
+            {
+                if (shiftPressed && v > 0.1f)
+                {
+                    // Crouch Jog
+                    SetAnimationState(PlayerAnimState.CrouchJog);
+                }
+                else
+                {
+                    // Crouch Walk
+                    SetAnimationState(PlayerAnimState.CrouchWalk);
+                }
+            }
+        }
+        else
+        {
+            // 앉아있지 않으면 Normal Idle / Walk / Run
+            // SHIFT + W => Run
+            bool forwardPressed = (v > 0.1f);
+            if (forwardPressed && isSprinting)
+            {
+                SetAnimationState(PlayerAnimState.Run);
+            }
+            else if (Mathf.Abs(h) > 0.1f || Mathf.Abs(v) > 0.1f)
+            {
+                SetAnimationState(PlayerAnimState.Walk);
+            }
+            else
+            {
+                // IDLE
+                // “10초 이내만 Idle 가능”이라면? 
+                // 여기서는 10초가 넘었으면 Idle 못 간다고 가정(또는 다른 처리)
+                if (timeSinceShoot <= 10f)
+                {
+                    SetAnimationState(PlayerAnimState.NormalIdle);
+                }
+                // timeSinceShoot > 10f 라면, Idle 대신 다른 상태 유지할 수도 있음
+            }
+        }
     }
 
-    private void HandleMovement()
+    // =========================================================
+    //  에이밍 상태 처리
+    // =========================================================
+    private void UpdateAimingState()
     {
-        // 이동 속도 결정 (달리기/걷기)
-        float currentSpeed = isSprinting ? sprintSpeed : moveSpeed;
+        // 1) “6초간 좌클릭 안 하면 노말 복귀”
+        if (Time.time - lastShootTime > 6f)
+        {
+            // 에이밍 모드 해제
+            isAiming = false;
+            // 노말 Idle 로 복귀
+            SetAnimationState(PlayerAnimState.NormalIdle);
+            return;
+        }
 
-        // 앉기/엎드리기 상태에서 속도 감소
+        // 2) crouch 여부
+        bool isCtrl = Input.GetKey(KeyCode.LeftControl);
+        float h = Input.GetAxis("Horizontal");
+        float v = Input.GetAxis("Vertical");
+
+        // 3) 좌클릭 시 Shoot (에이밍 자세에서)
+        //    이미 HandleInput()에서 lastShootTime 갱신, isShooting = true 세팅
+        //    아래에선 상태만 바꿔줌
+        if (isShooting)
+        {
+            // 앉아있으면 AimCrouchShoot, 아니면 AimShoot
+            if (isCtrl)
+            {
+                SetAnimationState(PlayerAnimState.AimCrouchShoot);
+            }
+            else
+            {
+                SetAnimationState(PlayerAnimState.AimShoot);
+            }
+            // 한 번만 처리
+            isShooting = false;
+            return;
+        }
+
+        // 4) 이동 방향 + Shift 확인해서 AimJog / AimWalkF/B/R/L 등 분기
+        bool shiftPressed = Input.GetKey(KeyCode.LeftShift);
+
+        if (isCtrl)
+        {
+            // 앉은 에이밍
+            if (Mathf.Abs(h) < 0.1f && Mathf.Abs(v) < 0.1f)
+            {
+                // 제자리 앉기
+                SetAnimationState(PlayerAnimState.AimCrouchIdle);
+            }
+            else
+            {
+                // 걷기
+                SetAnimationState(PlayerAnimState.AimCrouchWalk);
+            }
+        }
+        else
+        {
+            // 서 있는 에이밍
+            if (shiftPressed && v > 0.1f)
+            {
+                // 앞으로 조깅
+                SetAnimationState(PlayerAnimState.AimJog);
+            }
+            else
+            {
+                // 방향별로 AimWalkF/B/L/R
+                if (v > 0.1f)
+                {
+                    SetAnimationState(PlayerAnimState.AimWalkF);
+                }
+                else if (v < -0.1f)
+                {
+                    SetAnimationState(PlayerAnimState.AimWalkB);
+                }
+                else if (h > 0.1f)
+                {
+                    SetAnimationState(PlayerAnimState.AimWalkR);
+                }
+                else if (h < -0.1f)
+                {
+                    SetAnimationState(PlayerAnimState.AimWalkL);
+                }
+                else
+                {
+                    SetAnimationState(PlayerAnimState.AimIdle);
+                }
+            }
+        }
+    }
+
+    // =========================================================
+    //  이동 / 중력 처리
+    // =========================================================
+    private void ProcessMovement()
+    {
+        // 달리는 중이면 sprintSpeed, 앉아있으면 조금씩 다른 속도로
+        float finalSpeed = moveSpeed;
+
+        // 노말에서 Shift => Run
+        if (!isAiming && isSprinting)
+        {
+            finalSpeed = sprintSpeed;
+        }
+
+        // 앉아있을 때
         if (isCrouching)
-            currentSpeed *= 0.5f;
-        else if (isProne)
-            currentSpeed *= 0.25f;
+        {
+            // Aiming이든 노말이든 “앉아서 걷기 속도”를 우선 베이스로
+            finalSpeed = crouchSpeed;
+            // 혹시 “CrouchJog” 상태라면 crouchJogSpeed를 쓸 수도 있음
+            // (Shift+Ctrl+W 등)
+            if (isSprinting)
+            {
+                finalSpeed = crouchJogSpeed;
+            }
+        }
 
-        // 이동 입력 처리
-        float horizontal = Input.GetAxis("Horizontal");
-        float vertical = Input.GetAxis("Vertical");
+        // 에이밍 중이지만 Shift+W => AimJog라면
+        // (실제론 이동속도 약간 다르게 할 수도 있음)
+        if (isAiming)
+        {
+            // 필요하다면 “조준 중 속도 감소” 같은 것 적용 가능
+            // ex) finalSpeed *= 0.8f;
+        }
 
-        // 캐릭터 기준으로 이동 방향 계산
-        Vector3 moveDirection = transform.forward * vertical + transform.right * horizontal;
-        moveDirection.Normalize();
+        float h = Input.GetAxis("Horizontal");
+        float v = Input.GetAxis("Vertical");
 
-        // 이동 적용
-        controller.Move(moveDirection * currentSpeed * Time.deltaTime);
+        Vector3 moveDir = (transform.forward * v) + (transform.right * h);
+        moveDir.Normalize();
 
-        // 중력 적용
+        controller.Move(moveDir * finalSpeed * Time.deltaTime);
+    }
+
+    private void ApplyGravity()
+    {
         if (isGrounded && playerVelocity.y < 0)
         {
             playerVelocity.y = -2f;
         }
-
         playerVelocity.y += gravityValue * Time.deltaTime;
         controller.Move(playerVelocity * Time.deltaTime);
     }
 
-    private void HandleJump()
+    // =========================================================
+    //  키 입력: 좌클릭으로 Take, 에이밍 중 사격, etc.
+    // =========================================================
+    private void HandleInput()
     {
-        // 점프 처리
-        if (isJumping)
+        // 스프린트 & 크라우치
+        isSprinting = Input.GetKey(KeyCode.LeftShift);
+        isCrouching = Input.GetKey(KeyCode.LeftControl);
+
+        // 좌클릭
+        if (Input.GetMouseButtonDown(0))
         {
-            playerVelocity.y = Mathf.Sqrt(jumpForce * -2f * gravityValue);
+            if (!isAiming)
+            {
+                // 노말 상태에서 좌클릭 => Take 애니메이션
+                // (단, 이미 사망 상태가 아니라는 전제)
+                if (currentAnimState != PlayerAnimState.Die1)
+                {
+                    StartTakeAnimation();
+                }
+            }
+            else
+            {
+                // 에이밍 중 좌클릭 => Shoot
+                isShooting = true;
+                lastShootTime = Time.time;
+            }
         }
     }
 
-    /// <summary>
-    /// 마우스 입력을 받아 카메라 홀더(머리 축)와 플레이어를 회전시킵니다.
-    /// - 수직회전(X축): cameraHolder의 로컬 회전
-    /// - 수평회전(Y축): 캐릭터 전체를 회전( transform.Rotate )
-    /// </summary>
+    private void StartTakeAnimation()
+    {
+        takeStartTime = Time.time;
+        SetAnimationState(PlayerAnimState.Take);
+    }
+
+    // =========================================================
+    //  HP / 스태미나 처리
+    // =========================================================
+    private void HandleStamina()
+    {
+        // 달리기 중(Shift)라면 감소
+        // 단, 이동 입력이 있는지 magnitude로 체크
+        if (isSprinting && controller.velocity.magnitude > 0.1f)
+        {
+            currentStamina -= staminaDecreaseRate * Time.deltaTime;
+            if (currentStamina < 0f)
+            {
+                currentStamina = 0f;
+                // 스태미나가 0이면 더 달릴 수 없음
+                isSprinting = false;
+            }
+        }
+        else
+        {
+            // 회복
+            currentStamina += staminaRecoverRate * Time.deltaTime;
+            if (currentStamina > maxStamina)
+                currentStamina = maxStamina;
+        }
+    }
+
+    private void HandleHP()
+    {
+        if (currentHP <= 0f)
+        {
+            // 이미 Die1 상태가 아니면 사망 처리
+            if (currentAnimState != PlayerAnimState.Die1)
+            {
+                SetAnimationState(PlayerAnimState.Die1);
+            }
+        }
+    }
+
+    // 외부에서 데미지 주는 함수
+    public void TakeDamage(float dmg)
+    {
+        if (currentAnimState == PlayerAnimState.Die1) return; // 이미 사망
+
+        currentHP -= dmg;
+        if (currentHP < 0f) currentHP = 0f;
+    }
+
+    // =========================================================
+    //  카메라 회전 & 위치
+    // =========================================================
     private void HandleCameraRotation()
     {
         float mouseX = Input.GetAxis("Mouse X") * cameraSensitivity;
         float mouseY = Input.GetAxis("Mouse Y") * cameraSensitivity;
 
-        // 수직 회전 (X 축 기준)
+        // 상하 회전
         cameraRotationX -= mouseY;
         cameraRotationX = Mathf.Clamp(cameraRotationX, cameraYRotationLimit.x, cameraYRotationLimit.y);
         cameraHolder.localRotation = Quaternion.Euler(cameraRotationX, 0f, 0f);
 
-        // 수평 회전 (Y 축 기준) - 플레이어 전체가 좌우로 도는 느낌
-        transform.Rotate(Vector3.up * mouseX);
+        // 좌우 회전
+        transform.Rotate(Vector3.up, mouseX);
     }
 
-    /// <summary>
-    /// 카메라를 cameraHolder 뒤쪽(전방 반대 방향)으로 배치하면서,
-    /// 레이캐스트로 벽 등에 막히면 거리를 조절합니다. 마지막으로
-    /// cameraHolder의 회전을 그대로 따라가도록(cameraHolder.rotation) 세팅합니다.
-    /// </summary>
     private void UpdateCameraPosition()
     {
-        // 조준 중이면 카메라 살짝 더 가깝게
-       // float targetDistance = isAiming ? cameraDistance * 0.6f : cameraDistance;
-
-        // cameraHolder 기준 뒤쪽으로 targetDistance만큼 떨어진 위치 산출
-        Vector3 desiredPosition = cameraHolder.position - cameraHolder.forward ;
-
-        // 레이캐스트로 벽 감지하여 충돌 시 카메라가 너무 뚫고 들어가지 않게 처리
-        RaycastHit hit;
-        if (Physics.Linecast(cameraHolder.position, desiredPosition, out hit))
-        {
-            desiredPosition = hit.point + hit.normal * 0.2f;
-        }
-
-        // 카메라 배치 (회전은 cameraHolder의 회전을 그대로 사용)
-        playerCamera.position = desiredPosition;
+        playerCamera.position = cameraHolder.position;
         playerCamera.rotation = cameraHolder.rotation;
     }
 
-    private void DetermineAnimationState()
-    {
-        // 이동 속도 계산
-        Vector3 horizontalVelocity = new Vector3(controller.velocity.x, 0, controller.velocity.z);
-        float moveSpeedValue = horizontalVelocity.magnitude;
-
-        // 우선순위 기반으로 애니메이션 상태 결정
-        if (!isGrounded && playerVelocity.y < -0.1f)
-        {
-            SetAnimationState(PlayerAnimState.Fall);
-        }
-        else if (isJumping || (!isGrounded && playerVelocity.y > 0))
-        {
-            SetAnimationState(PlayerAnimState.Jump);
-        }
-        else if (isShooting)
-        {
-            SetAnimationState(PlayerAnimState.Shoot);
-        }
-        else if (isReloading)
-        {
-            SetAnimationState(PlayerAnimState.Reload);
-        }
-        else if (isProne)
-        {
-            SetAnimationState(PlayerAnimState.Prone);
-        }
-        else if (isCrouching)
-        {
-            SetAnimationState(PlayerAnimState.Crouch);
-        }
-        else if (isAiming)
-        {
-            SetAnimationState(PlayerAnimState.Aim);
-        }
-        else if (moveSpeedValue > 0.1f)
-        {
-            if (isSprinting)
-                SetAnimationState(PlayerAnimState.Run);
-            else
-                SetAnimationState(PlayerAnimState.Walk);
-        }
-        else
-        {
-            SetAnimationState(PlayerAnimState.Idle);
-        }
-    }
-
-    private void SetAnimationState(PlayerAnimState newState)
-    {
-        if (newState != currentAnimState)
-        {
-            currentAnimState = newState;
-        }
-    }
-
+    // =========================================================
+    //  최종적으로 Animator에 파라미터 주입
+    // =========================================================
     private void ApplyAnimationState()
     {
-        // 이동 속도 계산
-        Vector3 horizontalVelocity = new Vector3(controller.velocity.x, 0, controller.velocity.z);
-        float moveSpeedValue = horizontalVelocity.magnitude;
+        // 이동속도(좌우xz만)
+        Vector3 horizontalVel = new Vector3(controller.velocity.x, 0, controller.velocity.z);
+        float speedValue = horizontalVel.magnitude;
 
-        // 기본 애니메이션 파라미터 업데이트
-        animator.SetFloat(ANIM_PARAM_SPEED, moveSpeedValue);
-        animator.SetBool(ANIM_PARAM_IS_GROUNDED, isGrounded);
-        animator.SetBool(ANIM_PARAM_IS_AIMING, isAiming);
+        animator.SetFloat(ANIM_PARAM_SPEED, speedValue);
 
+        // 실제 애니메이션 상태에 따라 Animator 파라미터(AnimState) 세팅
+        // 아래 숫자는 예시이며, 실제 Animator에서 설정한 대로 맞추시면 됩니다.
         switch (currentAnimState)
         {
-            case PlayerAnimState.Idle:
-                animator.SetInteger(ANIM_PARAM_STATE, 0);
+            // ---------- Normal 쪽 ----------
+            case PlayerAnimState.NormalIdle:
+                animator.SetTrigger("IDLE");
                 break;
-
             case PlayerAnimState.Walk:
-                animator.SetInteger(ANIM_PARAM_STATE, 1);
+                animator.SetTrigger("WALK");
                 break;
-
             case PlayerAnimState.Run:
-                animator.SetInteger(ANIM_PARAM_STATE, 2);
+                animator.SetTrigger("RUN");
+                break;
+            case PlayerAnimState.CrouchIdle:
+                animator.SetTrigger("CROUCH IDLE");
+                break;
+            case PlayerAnimState.CrouchWalk:
+                animator.SetTrigger("CROUCH WALK");
+                break;
+            case PlayerAnimState.CrouchJog:
+                animator.SetTrigger("CROUCH JOG");
+                break;
+            case PlayerAnimState.Take:
+                animator.SetTrigger("TAKE");
+                break;
+            case PlayerAnimState.Die1:
+                animator.SetTrigger("DIE1");
                 break;
 
-            case PlayerAnimState.Jump:
-                animator.SetInteger(ANIM_PARAM_STATE, 3);
+            // ---------- Aiming 쪽 ----------
+            case PlayerAnimState.AimIdle:
+                animator.SetTrigger("IDLE 0");
                 break;
-
-            case PlayerAnimState.Fall:
-                animator.SetInteger(ANIM_PARAM_STATE, 4);
+            case PlayerAnimState.AimShoot:
+                animator.SetTrigger("SHOOT");
+                // Shoot 트리거가 필요하다면 animator.SetTrigger("Shoot") 추가 가능
                 break;
-
-            case PlayerAnimState.Crouch:
-                animator.SetInteger(ANIM_PARAM_STATE, 5);
+            case PlayerAnimState.AimJog:
+                animator.SetTrigger("JOG");
                 break;
-
-            case PlayerAnimState.Prone:
-                animator.SetInteger(ANIM_PARAM_STATE, 6);
+            case PlayerAnimState.AimWalkF:
+                animator.SetTrigger("WALK F");
                 break;
-
-            case PlayerAnimState.Aim:
-                animator.SetInteger(ANIM_PARAM_STATE, 7);
+            case PlayerAnimState.AimWalkB:
+                animator.SetTrigger("WALK B");
                 break;
-
-            case PlayerAnimState.Shoot:
-                animator.SetInteger(ANIM_PARAM_STATE, 8);
-                // 트리거 애니메이션 사용하는 경우
-                animator.SetTrigger("Shoot");
+            case PlayerAnimState.AimWalkR:
+                animator.SetTrigger("WALK R");
                 break;
-
-            case PlayerAnimState.Reload:
-                animator.SetInteger(ANIM_PARAM_STATE, 9);
-                // 트리거 애니메이션 사용하는 경우
-                animator.SetTrigger("Reload");
+            case PlayerAnimState.AimWalkL:
+                animator.SetTrigger("WALK L");
                 break;
-
-            case PlayerAnimState.Hurt:
-                animator.SetInteger(ANIM_PARAM_STATE, 10);
+            case PlayerAnimState.AimCrouchIdle:
+                animator.SetTrigger("CROUCH IDLE 0");
                 break;
-
-            case PlayerAnimState.Death:
-                animator.SetInteger(ANIM_PARAM_STATE, 11);
+            case PlayerAnimState.AimCrouchWalk:
+                animator.SetTrigger("CROUCH WALK 0");
                 break;
-
-            default:
-                animator.SetInteger(ANIM_PARAM_STATE, 0); // 기본값은 Idle
+            case PlayerAnimState.AimCrouchShoot:
+                animator.SetTrigger("CROUCH SHOOT");
+                // 마찬가지로 Shoot 트리거 등
                 break;
         }
     }
 
-    // 외부에서 호출 가능한 공개 메서드
-    public void PlayHurtAnimation()
+    // =========================================================
+    //  상태를 바꾸는 함수 (enum 값만 변경)
+    // =========================================================
+    private void SetAnimationState(PlayerAnimState newState)
     {
-        SetAnimationState(PlayerAnimState.Hurt);
-        ApplyAnimationState();
+        if (newState == currentAnimState) return;
+        currentAnimState = newState;
     }
 
-    public void PlayDeathAnimation()
+    // =========================================================
+    //  HUD
+    // =========================================================
+    private void UpdateHUD()
     {
-        SetAnimationState(PlayerAnimState.Death);
-        ApplyAnimationState();
+        if (hpBar)
+        {
+            hpBar.fillAmount = currentHP / maxHP;
+        }
+        if (staminaBar)
+        {
+            staminaBar.fillAmount = currentStamina / maxStamina;
+        }
     }
 
-    // 디버그용 시각화 (필요시 사용)
+    // =========================================================
+    //  디버그용
+    // =========================================================
     private void OnDrawGizmos()
     {
         if (!Application.isPlaying) return;
 
-        // 카메라 홀더와 실제 카메라 위치 사이를 빨간 선으로 표시
         Gizmos.color = Color.red;
         Gizmos.DrawLine(cameraHolder.position, playerCamera.position);
     }
