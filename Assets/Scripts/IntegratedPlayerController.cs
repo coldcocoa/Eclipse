@@ -72,6 +72,24 @@ public class IntegratedPlayerController : MonoBehaviour
 
     // 애니메이션 파라미터 이름
     private readonly string ANIM_PARAM_SPEED = "Speed";
+    private readonly string ANIM_PARAM_IS_IDLE = "IDLE";
+    private readonly string ANIM_PARAM_IS_WALK = "WALK";
+    private readonly string ANIM_PARAM_IS_RUN = "RUN";
+    private readonly string ANIM_PARAM_IS_CROUCH_IDLE = "CROUCH IDLE";
+    private readonly string ANIM_PARAM_IS_CROUCH_WALK = "CROUCH WALK";
+    private readonly string ANIM_PARAM_IS_CROUCH_JOG = "CROUCH JOG";
+    private readonly string ANIM_PARAM_IS_TAKE = "TAKE";
+    private readonly string ANIM_PARAM_IS_DIE = "DIE1";
+    private readonly string ANIM_PARAM_IS_AIM_IDLE = "IDLE 0";
+    private readonly string ANIM_PARAM_IS_AIM_SHOOT = "SHOOT";
+    private readonly string ANIM_PARAM_IS_AIM_JOG = "JOG";
+    private readonly string ANIM_PARAM_IS_AIM_WALK_F = "WALK F";
+    private readonly string ANIM_PARAM_IS_AIM_WALK_B = "WALK B";
+    private readonly string ANIM_PARAM_IS_AIM_WALK_R = "WALK R";
+    private readonly string ANIM_PARAM_IS_AIM_WALK_L = "WALK L";
+    private readonly string ANIM_PARAM_IS_AIM_CROUCH_IDLE = "CROUCH IDLE 0";
+    private readonly string ANIM_PARAM_IS_AIM_CROUCH_WALK = "CROUCH WALK 0";
+    private readonly string ANIM_PARAM_IS_AIM_CROUCH_SHOOT = "CROUCH SHOOT";
 
     private void Awake()
     {
@@ -435,68 +453,85 @@ public class IntegratedPlayerController : MonoBehaviour
 
         animator.SetFloat(ANIM_PARAM_SPEED, speedValue);
 
-        // 애니메이션 처리 함수에서 Animator 파라미터(AnimState) 처리
-        // 주의: 애니메이션 함수 내에서 처리 필요.
+        // 모든 애니메이션 상태를 false로 초기화
+        animator.SetBool(ANIM_PARAM_IS_IDLE, false);
+        animator.SetBool(ANIM_PARAM_IS_WALK, false);
+        animator.SetBool(ANIM_PARAM_IS_RUN, false);
+        animator.SetBool(ANIM_PARAM_IS_CROUCH_IDLE, false);
+        animator.SetBool(ANIM_PARAM_IS_CROUCH_WALK, false);
+        animator.SetBool(ANIM_PARAM_IS_CROUCH_JOG, false);
+        animator.SetBool(ANIM_PARAM_IS_TAKE, false);
+        animator.SetBool(ANIM_PARAM_IS_DIE, false);
+        animator.SetBool(ANIM_PARAM_IS_AIM_IDLE, false);
+        animator.SetBool(ANIM_PARAM_IS_AIM_SHOOT, false);
+        animator.SetBool(ANIM_PARAM_IS_AIM_JOG, false);
+        animator.SetBool(ANIM_PARAM_IS_AIM_WALK_F, false);
+        animator.SetBool(ANIM_PARAM_IS_AIM_WALK_B, false);
+        animator.SetBool(ANIM_PARAM_IS_AIM_WALK_R, false);
+        animator.SetBool(ANIM_PARAM_IS_AIM_WALK_L, false);
+        animator.SetBool(ANIM_PARAM_IS_AIM_CROUCH_IDLE, false);
+        animator.SetBool(ANIM_PARAM_IS_AIM_CROUCH_WALK, false);
+        animator.SetBool(ANIM_PARAM_IS_AIM_CROUCH_SHOOT, false);
+
+        // 현재 상태에 해당하는 애니메이션만 true로 설정
         switch (currentAnimState)
         {
             // ---------- Normal 상태 ----------
             case PlayerAnimState.NormalIdle:
-                animator.SetTrigger("IDLE");
+                animator.SetBool(ANIM_PARAM_IS_IDLE, true);
                 break;
             case PlayerAnimState.Walk:
-                animator.SetTrigger("WALK");
+                animator.SetBool(ANIM_PARAM_IS_WALK, true);
                 break;
             case PlayerAnimState.Run:
-                animator.SetTrigger("RUN");
+                animator.SetBool(ANIM_PARAM_IS_RUN, true);
                 break;
             case PlayerAnimState.CrouchIdle:
-                animator.SetTrigger("CROUCH IDLE");
+                animator.SetBool(ANIM_PARAM_IS_CROUCH_IDLE, true);
                 break;
             case PlayerAnimState.CrouchWalk:
-                animator.SetTrigger("CROUCH WALK");
+                animator.SetBool(ANIM_PARAM_IS_CROUCH_WALK, true);
                 break;
             case PlayerAnimState.CrouchJog:
-                animator.SetTrigger("CROUCH JOG");
+                animator.SetBool(ANIM_PARAM_IS_CROUCH_JOG, true);
                 break;
             case PlayerAnimState.Take:
-                animator.SetTrigger("TAKE");
+                animator.SetBool(ANIM_PARAM_IS_TAKE, true);
                 break;
             case PlayerAnimState.Die1:
-                animator.SetTrigger("DIE1");
+                animator.SetBool(ANIM_PARAM_IS_DIE, true);
                 break;
 
             // ---------- Aiming 상태 ----------
             case PlayerAnimState.AimIdle:
-                animator.SetTrigger("IDLE 0");
+                animator.SetBool(ANIM_PARAM_IS_AIM_IDLE, true);
                 break;
             case PlayerAnimState.AimShoot:
-                animator.SetTrigger("SHOOT");
-                // Shoot 트리거 추가 필요
+                animator.SetBool(ANIM_PARAM_IS_AIM_SHOOT, true);
                 break;
             case PlayerAnimState.AimJog:
-                animator.SetTrigger("JOG");
+                animator.SetBool(ANIM_PARAM_IS_AIM_JOG, true);
                 break;
             case PlayerAnimState.AimWalkF:
-                animator.SetTrigger("WALK F");
+                animator.SetBool(ANIM_PARAM_IS_AIM_WALK_F, true);
                 break;
             case PlayerAnimState.AimWalkB:
-                animator.SetTrigger("WALK B");
+                animator.SetBool(ANIM_PARAM_IS_AIM_WALK_B, true);
                 break;
             case PlayerAnimState.AimWalkR:
-                animator.SetTrigger("WALK R");
+                animator.SetBool(ANIM_PARAM_IS_AIM_WALK_R, true);
                 break;
             case PlayerAnimState.AimWalkL:
-                animator.SetTrigger("WALK L");
+                animator.SetBool(ANIM_PARAM_IS_AIM_WALK_L, true);
                 break;
             case PlayerAnimState.AimCrouchIdle:
-                animator.SetTrigger("CROUCH IDLE 0");
+                animator.SetBool(ANIM_PARAM_IS_AIM_CROUCH_IDLE, true);
                 break;
             case PlayerAnimState.AimCrouchWalk:
-                animator.SetTrigger("CROUCH WALK 0");
+                animator.SetBool(ANIM_PARAM_IS_AIM_CROUCH_WALK, true);
                 break;
             case PlayerAnimState.AimCrouchShoot:
-                animator.SetTrigger("CROUCH SHOOT");
-                // 총 발사 트리거 추가 필요
+                animator.SetBool(ANIM_PARAM_IS_AIM_CROUCH_SHOOT, true);
                 break;
         }
     }
@@ -507,6 +542,27 @@ public class IntegratedPlayerController : MonoBehaviour
     private void SetAnimationState(PlayerAnimState newState)
     {
         if (newState == currentAnimState) return;
+
+        // 현재 애니메이션이 재생 중인지 확인
+        if (animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 1.0f)
+        {
+            // 특정 상태에서는 즉시 전환 허용
+            if (newState == PlayerAnimState.Die1 || 
+                newState == PlayerAnimState.Take || 
+                newState == PlayerAnimState.AimShoot || 
+                newState == PlayerAnimState.AimCrouchShoot)
+            {
+                currentAnimState = newState;
+                return;
+            }
+
+            // 다른 상태들은 현재 애니메이션이 거의 끝날 때만 전환
+            if (animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 0.8f)
+            {
+                return;
+            }
+        }
+
         currentAnimState = newState;
     }
 
