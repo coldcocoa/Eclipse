@@ -196,7 +196,7 @@ public class IntegratedPlayerController : MonoBehaviour
             {
                 SetAnimationState(PlayerAnimState.Run);
             }
-            else if (Mathf.Abs(h) > 0.1f || Mathf.Abs(v) > 0.1f)
+            else if (Mathf.Abs(h) > 0.05f || Mathf.Abs(v) > 0.05f)
             {
                 SetAnimationState(PlayerAnimState.Walk);
             }
