@@ -22,21 +22,30 @@ public class IntegratedPlayerController : MonoBehaviour
     [SerializeField] private float staminaRecoverRate = 3f;
 
     [Header("UI")]
-    [SerializeField] private Image hpBar;       // HP바 (Fill)
-    [SerializeField] private Image staminaBar;  // 스태미나 바 (Fill)
+    // [SerializeField] private Image hpBar;       // HP바 (Fill) -> Slider로 변경
+    // [SerializeField] private Image staminaBar;  // 스태미나 바 (Fill) -> Slider로 변경
+    [SerializeField] private Slider hpSlider;     // HP 슬라이더
+    [SerializeField] private Slider staminaSlider; // 스태미나 슬라이더
 
     // 캐릭터 컨트롤러
     private CharacterController controller;
+    // CameraController 참조 추가
+    public CameraController cameraController;
 
     // 이동 관련
     private Vector3 playerVelocity;
     private bool isGrounded;
     private bool isSprinting;
     private bool isCrouching;
+    // 이동 상태 확인 프로퍼티 추가
+    public bool IsMoving => controller.velocity.magnitude > 0.1f; // 속도가 0.1 이상이면 이동 중으로 간주
 
     // 조준 관련 상태
     private bool isAiming = false;
     private bool isShooting = false;
+
+    // isAiming 상태를 외부에서 읽기 위한 프로퍼티 추가
+    public bool IsAiming => isAiming;
 
     // 시간 관련
     private float lastShootTime = 0f;   // 마지막으로 쏜 시간
@@ -91,9 +100,15 @@ public class IntegratedPlayerController : MonoBehaviour
     private readonly string ANIM_PARAM_IS_AIM_CROUCH_WALK = "CROUCH WALK 0";
     private readonly string ANIM_PARAM_IS_AIM_CROUCH_SHOOT = "CROUCH SHOOT";
 
+    [Header("회전 속도 설정")] // 헤더 추가
+    [SerializeField] private float rotationSpeed = 10f; // 캐릭터 회전 속도 추가
+
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
+        // CameraController 컴포넌트 찾기 (Main Camera에 있다고 가정)
+        // Camera.main 대신 FindObjectOfType 또는 다른 방식으로 찾아도 됩니다.
+        
 
         if (animator == null)
             animator = GetComponent<Animator>();
@@ -332,20 +347,45 @@ public class IntegratedPlayerController : MonoBehaviour
             }
         }
 
-        // 총 발사 처리
-        if (isAiming)
-        {
-            // 총 발사 중일 때 속도 처리
-            // ex) finalSpeed *= 0.8f;
-        }
+        // 총 발사 처리 (조준 중일 때 속도 감소 등 필요시 추가)
+        // if (isAiming)
+        // {
+        //     // 예: finalSpeed *= 0.8f;
+        // }
 
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
 
-        Vector3 moveDir = (transform.forward * v) + (transform.right * h);
-        moveDir.Normalize();
+        // --- 이동 방향 계산 수정 ---
+        // 메인 카메라의 Transform 가져오기
+        Transform cameraTransform = Camera.main.transform;
 
+        // 카메라의 전방 방향과 오른쪽 방향을 기준으로 이동 방향 계산
+        Vector3 forward = cameraTransform.forward;
+        Vector3 right = cameraTransform.right;
+
+        // Y축 이동은 무시 (수평 이동만 고려)
+        forward.y = 0f;
+        right.y = 0f;
+        forward.Normalize();
+        right.Normalize();
+
+        // 입력값과 카메라 방향을 조합하여 최종 이동 방향 계산
+        Vector3 moveDir = (forward * v) + (right * h);
+        moveDir.Normalize(); // 대각선 이동 시 속도 보정
+
+        // --- 캐릭터 이동 ---
         controller.Move(moveDir * finalSpeed * Time.deltaTime);
+
+        // --- 캐릭터 회전 (조준 중이 아닐 때만) ---
+        if (!isAiming && moveDir.sqrMagnitude > 0.01f) // 이동 방향이 있을 때만 회전
+        {
+            // 목표 회전값 계산 (이동 방향을 바라보도록)
+            Quaternion targetRotation = Quaternion.LookRotation(moveDir);
+            // 현재 회전값에서 목표 회전값으로 부드럽게 회전
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+        }
+        // ------------------------------------
     }
 
     private void ApplyGravity()
@@ -364,7 +404,7 @@ public class IntegratedPlayerController : MonoBehaviour
     private void HandleInput()
     {
         // 입력 처리 & 체력 처리
-        isSprinting = Input.GetKey(KeyCode.LeftShift);
+        isSprinting = Input.GetKey(KeyCode.LeftShift) && currentStamina > 0; // 스태미나가 있어야 달리기 가능
         isCrouching = Input.GetKey(KeyCode.LeftControl);
 
         // 총 발사
@@ -373,7 +413,6 @@ public class IntegratedPlayerController : MonoBehaviour
             if (!isAiming)
             {
                 // 브레이크 총 발사 => Take 애니메이션
-                // (예: 총 발사 후 체력 감소 처리)
                 if (currentAnimState != PlayerAnimState.Die1)
                 {
                     StartTakeAnimation();
@@ -392,6 +431,13 @@ public class IntegratedPlayerController : MonoBehaviour
     {
         takeStartTime = Time.time;
         SetAnimationState(PlayerAnimState.Take);
+
+        // --- 추가: 카메라 컨트롤러에 캐릭터 회전 요청 ---
+        if (cameraController != null)
+        {
+            cameraController.AlignCharacterToCameraForward();
+        }
+        // ---------------------------------------------
     }
 
     // =========================================================
@@ -541,28 +587,33 @@ public class IntegratedPlayerController : MonoBehaviour
     // =========================================================
     private void SetAnimationState(PlayerAnimState newState)
     {
-        if (newState == currentAnimState) return;
+        if (newState == currentAnimState) return; // 같은 상태로 변경 시 무시
 
-        // 현재 애니메이션이 재생 중인지 확인
+        // 현재 애니메이션이 재생 중인지 확인 (normalizedTime < 1.0f 이면 재생 중)
         if (animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 1.0f)
         {
-            // 특정 상태에서는 즉시 전환 허용
-            if (newState == PlayerAnimState.Die1 || 
-                newState == PlayerAnimState.Take || 
-                newState == PlayerAnimState.AimShoot || 
+            // 특정 상태(Die, Take, Shoot)로는 즉시 전환 허용 (현재 애니메이션 중단)
+            if (newState == PlayerAnimState.Die1 ||
+                newState == PlayerAnimState.Take ||
+                newState == PlayerAnimState.AimShoot ||
                 newState == PlayerAnimState.AimCrouchShoot)
             {
+                // 즉시 상태 변경하고 함수 종료
                 currentAnimState = newState;
+                // ApplyAnimationState()는 Update 마지막에 호출되므로 여기서 애니메이터 파라미터 설정 불필요
                 return;
             }
 
-            // 다른 상태들은 현재 애니메이션이 거의 끝날 때만 전환
-            if (animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 0.8f)
+            // --- 중요: 다른 상태들로의 전환 조건 ---
+            // 현재 애니메이션이 80% 미만으로 재생되었다면, 새로운 상태로 전환하지 않음
+            if (animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 0.05f)
             {
-                return;
+                return; // 상태 변경 취소하고 함수 종료
             }
+            // 80% 이상 재생되었으면 아래 코드로 진행하여 상태 변경
         }
 
+        // 현재 애니메이션이 끝났거나, 80% 이상 재생된 경우 상태 변경
         currentAnimState = newState;
     }
 
@@ -571,13 +622,24 @@ public class IntegratedPlayerController : MonoBehaviour
     // =========================================================
     private void UpdateHUD()
     {
-        if (hpBar)
+        // if (hpBar) // Image 대신 Slider 사용
+        // {
+        //     hpBar.fillAmount = currentHP / maxHP;
+        // }
+        if (hpSlider != null) // hpSlider가 할당되었는지 확인
         {
-            hpBar.fillAmount = currentHP / maxHP;
+            // Slider의 value는 0과 1 사이의 값이어야 함 (또는 min/max value 설정)
+            // 여기서는 0~1 범위로 정규화하여 설정
+            hpSlider.value = currentHP / maxHP;
         }
-        if (staminaBar)
+
+        // if (staminaBar) // Image 대신 Slider 사용
+        // {
+        //     staminaBar.fillAmount = currentStamina / maxStamina;
+        // }
+        if (staminaSlider != null) // staminaSlider가 할당되었는지 확인
         {
-            staminaBar.fillAmount = currentStamina / maxStamina;
+            staminaSlider.value = currentStamina / maxStamina;
         }
     }
 }
