@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI; // Slider, Text 등 사용
 using System.Collections; // Coroutine 사용
+using TMPro; // TextMeshPro 사용 시 추가
 
 // UI 요소 관리 및 상호작용 피드백 처리 (씬에 하나 존재)
 public class UIManager : MonoBehaviour
@@ -10,7 +11,8 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Slider lootingSlider;
 
     [Header("메시지 UI")]
-    [SerializeField] private Text messageText; // "인벤토리 가득 참" 등 메시지 표시
+    [SerializeField] private GameObject messagePanel; // 메시지 표시 패널
+    [SerializeField] private TextMeshProUGUI messageText; // 메시지 텍스트 (TMP)
     [SerializeField] private float messageDuration = 2f;
 
     [Header("인벤토리 UI")]
@@ -19,6 +21,12 @@ public class UIManager : MonoBehaviour
 
     [Header("상호작용 UI")]
     [SerializeField] private GameObject interactionPromptPanel; // "E키 눌러 상호작용" 텍스트 등
+
+    // --- 골드 UI 추가 ---
+    [Header("플레이어 정보")]
+    [SerializeField] private TextMeshProUGUI goldText; // 골드 표시 텍스트 (TMP)
+    // [SerializeField] private Text goldText; // 일반 Text 사용 시
+    // --------------------
 
     // 싱글톤
     public static UIManager Instance { get; private set; }
@@ -44,9 +52,23 @@ public class UIManager : MonoBehaviour
     {
         // 초기 UI 상태 설정
         lootingProgressPanel?.SetActive(false);
-        messageText?.gameObject.SetActive(false);
+        messagePanel?.SetActive(false);
         inventoryPanel?.SetActive(false);
         interactionPromptPanel?.SetActive(false);
+
+        // 게임 시작 시 초기 골드 UI 업데이트
+        if (PlayerWallet.Instance != null)
+        {
+            UpdateGoldUI(PlayerWallet.Instance.currentGold);
+        }
+        else
+        {
+             // PlayerWallet이 아직 준비되지 않았을 수 있으므로, 약간의 딜레이 후 시도하거나
+             // PlayerWallet의 Awake에서 UIManager를 호출하는 방식을 고려할 수 있습니다.
+             // 여기서는 간단히 초기값 0으로 설정하거나, 오류 메시지를 표시할 수 있습니다.
+             UpdateGoldUI(0); // 또는 오류 처리
+             Debug.LogWarning("UIManager.Start: PlayerWallet.Instance is null. Initial gold UI might be incorrect.");
+        }
     }
 
     private void Update()
@@ -120,9 +142,9 @@ public class UIManager : MonoBehaviour
     private IEnumerator ShowMessageCoroutine(string message)
     {
         messageText.text = message;
-        messageText.gameObject.SetActive(true);
+        messagePanel?.SetActive(true);
         yield return new WaitForSeconds(messageDuration);
-        messageText.gameObject.SetActive(false);
+        messagePanel?.SetActive(false);
         messageCoroutine = null;
     }
 
@@ -147,4 +169,18 @@ public class UIManager : MonoBehaviour
     {
         interactionPromptPanel?.SetActive(show);
     }
+
+    // --- 골드 UI 업데이트 함수 추가 ---
+    public void UpdateGoldUI(int goldAmount)
+    {
+        if (goldText != null)
+        {
+            goldText.text = $"골드: {goldAmount}"; // 원하는 형식으로 표시
+        }
+        else
+        {
+            Debug.LogWarning("UIManager에 골드 텍스트가 할당되지 않았습니다.");
+        }
+    }
+    // ---------------------------------
 } 

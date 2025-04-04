@@ -75,11 +75,17 @@ public class Monster_AI : MonoBehaviour
         agent.speed = moveSpeed;
         agent.stoppingDistance = attackRange * 0.8f; // 공격 범위보다 약간 앞에서 멈추도록 설정
         lastActionTime = -patrolCycleTime; // 시작 시 바로 순찰 시작하도록
+        
     }
 
     void Update()
     {
         if (isDead || player == null) return; // 죽었거나 플레이어가 없으면 업데이트 중지
+
+        if (Input.GetKeyDown(KeyCode.K))
+        {
+            TakeDamage(maxHp);
+        }
 
         // 상태에 따른 로직 실행
         switch (currentState)
@@ -247,7 +253,7 @@ public class Monster_AI : MonoBehaviour
                     agent.isStopped = true; // 이동 중지
                     agent.enabled = false; // 네비게이션 비활성화
                 }
-                GetComponent<Collider>().enabled = false; // 충돌 비활성화 (선택 사항)
+                //GetComponent<Collider>().enabled = false; // 충돌 비활성화 (선택 사항)
 
                 // --- 드랍 처리 로직 추가 ---
                 ProcessDeathDrops();
@@ -263,7 +269,7 @@ public class Monster_AI : MonoBehaviour
     {
         if (dropTable == null)
         {
-            Debug.LogWarning($"{gameObject.name}: DropTable이 설정되지 않았습니다.");
+            Debug.LogError($"{gameObject.name}: DropTable이 설정되지 않았습니다.");
             return;
         }
 

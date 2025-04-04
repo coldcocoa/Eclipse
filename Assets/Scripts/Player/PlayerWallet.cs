@@ -21,14 +21,27 @@ public class PlayerWallet : MonoBehaviour
         }
     }
 
+    // --- 시작 시 UI 업데이트 추가 (선택 사항) ---
+    // UIManager보다 먼저 Awake가 실행될 수 있으므로 Start에서 호출하는 것이 더 안전할 수 있음
+    // void Start()
+    // {
+    //     // UIManager가 준비되었는지 확인 후 초기 UI 업데이트 요청
+    //     if (UIManager.Instance != null)
+    //     {
+    //         UIManager.Instance.UpdateGoldUI(currentGold);
+    //     }
+    // }
+    // ------------------------------------------
+
     public void AddGold(int amount)
     {
         if (amount > 0)
         {
             currentGold += amount;
             Debug.Log($"골드 획득: +{amount} / 현재 골드: {currentGold}");
-            // 여기에 골드 UI 업데이트 로직 호출 추가
-            // UIManager.Instance.UpdateGoldUI(currentGold);
+            // --- UI 업데이트 호출 추가 ---
+            UIManager.Instance?.UpdateGoldUI(currentGold);
+            // --------------------------
         }
     }
 
@@ -38,8 +51,9 @@ public class PlayerWallet : MonoBehaviour
         {
             currentGold -= amount;
             Debug.Log($"골드 사용: -{amount} / 현재 골드: {currentGold}");
-            // 여기에 골드 UI 업데이트 로직 호출 추가
-            // UIManager.Instance.UpdateGoldUI(currentGold);
+            // --- UI 업데이트 호출 추가 ---
+            UIManager.Instance?.UpdateGoldUI(currentGold);
+            // --------------------------
             return true;
         }
         return false;
