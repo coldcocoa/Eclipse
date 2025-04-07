@@ -1,14 +1,17 @@
 using UnityEngine;
 using UnityEngine.UI;
+using DG.Tweening; // DOTween 네임스페이스 추가
 
 public class MonsterHealthUI : MonoBehaviour
 {
     [SerializeField] private Slider healthSlider;
     [SerializeField] private float yOffset = 2.0f; // 몬스터 머리 위로 얼마나 띄울지
+    [SerializeField] private float healthChangeDuration = 0.3f; // 체력 변경 애니메이션 시간
 
     private Transform monsterTransform;
     private Transform cameraTransform;
     private Monster_AI monsterAI;
+    private Tween healthTween; // 현재 진행 중인 체력 트윈 참조
 
     // 몬스터 AI와 연결하고 초기 설정
     public void Setup(Monster_AI targetMonster)
@@ -21,21 +24,18 @@ public class MonsterHealthUI : MonoBehaviour
             return;
         }
         monsterTransform = targetMonster.transform;
-        cameraTransform = Camera.main?.transform; // 메인 카메라 참조 (Null 체크)
+        cameraTransform = Camera.main?.transform;
 
         if (cameraTransform == null)
         {
              Debug.LogError("Main Camera not found!", this);
-             // 카메라가 없으면 빌보드 효과를 사용할 수 없으므로,
-             // UI가 이상하게 보일 수 있습니다. 파괴하거나 다른 처리 필요.
              Destroy(gameObject);
              return;
         }
 
-        // 슬라이더 참조 확인
         if (healthSlider == null)
         {
-            healthSlider = GetComponentInChildren<Slider>(); // 하위에서 찾아보기
+            healthSlider = GetComponentInChildren<Slider>();
             if (healthSlider == null)
             {
                  Debug.LogError("Health Slider component not found!", this);
@@ -44,10 +44,11 @@ public class MonsterHealthUI : MonoBehaviour
             }
         }
 
-        // 초기 체력 설정
-        UpdateHealth();
+        // 초기 체력 설정 (애니메이션 없이 즉시 설정)
+        SetInitialHealth();
     }
 
+    // Update에서 직접 체력 업데이트 제거
     void Update()
     {
         // 몬스터가 파괴되었거나 설정 안됐으면 자신도 파괴
@@ -57,15 +58,13 @@ public class MonsterHealthUI : MonoBehaviour
             return;
         }
 
-        // 체력 업데이트
-        UpdateHealth();
-
-        // 몬스터가 죽으면 비활성화 (또는 파괴)
-        if (monsterAI.currentHp <= 0)
-        {
-            // gameObject.SetActive(false); // 비활성화
-            Destroy(gameObject); // 파괴 (더 깔끔할 수 있음)
-        }
+        // 몬스터가 죽으면 비활성화 또는 파괴 (이 로직은 유지)
+        // (주의: 체력이 0으로 부드럽게 줄어드는 동안 파괴될 수 있으므로,
+        //  TakeDamage에서 즉시 0으로 만들고 여기서 파괴하는 것이 더 나을 수 있음)
+        // if (monsterAI.currentHp <= 0)
+        // {
+        //     Destroy(gameObject);
+        // }
     }
 
     void LateUpdate()
@@ -81,21 +80,46 @@ public class MonsterHealthUI : MonoBehaviour
                          cameraTransform.rotation * Vector3.up);
     }
 
-    // 슬라이더 값 업데이트
-    private void UpdateHealth()
+    // 초기 체력 설정 (애니메이션 없음)
+    private void SetInitialHealth()
     {
         if (monsterAI != null && healthSlider != null)
         {
-            // 체력을 0과 1 사이의 비율로 변환하여 슬라이더 값 설정
-            // maxHp가 0이 되는 경우 방지
-            if (monsterAI.maxHp > 0)
-            {
-                healthSlider.value = monsterAI.currentHp / monsterAI.maxHp;
-            }
-            else
-            {
-                healthSlider.value = 0; // maxHp가 0이면 체력 0으로 표시
-            }
+            float initialValue = (monsterAI.maxHp > 0) ? (monsterAI.currentHp / monsterAI.maxHp) : 0f;
+            healthSlider.value = initialValue;
         }
+    }
+
+    // --- 체력을 부드럽게 업데이트하는 함수 (Monster_AI에서 호출) ---
+    public void UpdateHealthSmoothly(float currentHp, float maxHp)
+    {
+        if (healthSlider == null) return;
+
+        // 목표 값 계산 (0과 1 사이)
+        float targetValue = (maxHp > 0) ? Mathf.Clamp01(currentHp / maxHp) : 0f;
+
+        // 기존 트윈이 있다면 중지 (새로운 값으로 즉시 시작하기 위해)
+        healthTween?.Kill(); // 또는 healthSlider.DOKill();
+
+        // DOTween을 사용하여 슬라이더 값 부드럽게 변경
+        healthTween = healthSlider.DOValue(targetValue, healthChangeDuration)
+                                .SetEase(Ease.OutQuad); // 부드러운 감속 효과 (원하는 Ease로 변경 가능)
+                                //.OnComplete(() => healthTween = null); // 트윈 완료 시 참조 제거 (선택 사항)
+
+        // 체력이 0 이하가 되면 즉시 파괴 (선택적이지만 권장)
+        if (currentHp <= 0)
+        {
+            // 약간의 딜레이 후 파괴하여 체력 바가 0으로 가는 것을 보여줄 수 있음
+            // Destroy(gameObject, healthChangeDuration + 0.1f);
+            // 또는 즉시 파괴
+             Destroy(gameObject);
+        }
+    }
+    // ---------------------------------------------------------
+
+    // 오브젝트 파괴 시 DOTween 정리 (메모리 누수 방지)
+    void OnDestroy()
+    {
+        healthTween?.Kill();
     }
 } 

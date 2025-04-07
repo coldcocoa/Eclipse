@@ -1,8 +1,12 @@
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections;
 
 public class IntegratedPlayerController : MonoBehaviour
 {
+    // 애니메이션 파라미터 상수 정의 (클래스 상단 부분에 추가)
+    private const string ANIM_PARAM_TRIGGER_SHOOT = "SHOOT"; // 발사 트리거 파라미터
+
     [Header("이동 속도 설정")]
     [SerializeField] private float moveSpeed = 5f;      // 일반 이동 속도
     [SerializeField] private float sprintSpeed = 10f;   // 달리기(Shift)
@@ -16,8 +20,8 @@ public class IntegratedPlayerController : MonoBehaviour
     [Header("체력 & 스태미나")]
     [SerializeField] private float maxHP = 100f;
     [SerializeField] private float currentHP = 100f;
-    [SerializeField] private float maxStamina = 50f;
-    [SerializeField] private float currentStamina = 50f;
+    [SerializeField] private float maxStamina = 100f;
+    [SerializeField] private float currentStamina = 100f;
     [SerializeField] private float staminaDecreaseRate = 5f;
     [SerializeField] private float staminaRecoverRate = 3f;
 
@@ -41,11 +45,22 @@ public class IntegratedPlayerController : MonoBehaviour
     public bool IsMoving => controller.velocity.magnitude > 0.1f; // 속도가 0.1 이상이면 이동 중으로 간주
 
     // 조준 관련 상태
-    private bool isAiming = false;
-    private bool isShooting = false;
+    [Header("에임 설정")]
+    [SerializeField] private bool isAiming = false; // 현재 에임 모드 상태
+    [SerializeField] private bool isShooting = false; // isShooting 변수 유지
+    [SerializeField] private float aimTimeoutDuration = 6.0f; // 에임 상태 유지 최대 시간 (초)
+    [SerializeField] private Transform gunMuzzle; // 총구 위치 (Inspector에서 할당 필요)
+    [SerializeField] private float weaponRange = 100f; // 무기 사거리
 
-    // isAiming 상태를 외부에서 읽기 위한 프로퍼티 추가
+    private float lastAimInputTime; // 마지막 에임 관련 입력 시간
+
+    // 발사 관련 변수
+    [SerializeField] private float fireRate = 0.25f; // 발사 간격 (초)
+    private float nextFireTime = 0f; // 다음 발사 가능 시간
+
+    // 이동 상태 확인 프로퍼티 추가
     public bool IsAiming => isAiming;
+    public bool IsShooting => isShooting; // isShooting 프로퍼티 추가
 
     // 시간 관련
     private float lastShootTime = 0f;   // 마지막으로 쏜 시간
@@ -87,7 +102,7 @@ public class IntegratedPlayerController : MonoBehaviour
     private readonly string ANIM_PARAM_IS_CROUCH_IDLE = "CROUCH IDLE";
     private readonly string ANIM_PARAM_IS_CROUCH_WALK = "CROUCH WALK";
     private readonly string ANIM_PARAM_IS_CROUCH_JOG = "CROUCH JOG";
-    private readonly string ANIM_PARAM_IS_TAKE = "TAKE";
+    //private readonly string ANIM_PARAM_IS_TAKE = "TAKE";
     private readonly string ANIM_PARAM_IS_DIE = "DIE1";
     private readonly string ANIM_PARAM_IS_AIM_IDLE = "IDLE 0";
     private readonly string ANIM_PARAM_IS_AIM_SHOOT = "SHOOT";
@@ -103,12 +118,23 @@ public class IntegratedPlayerController : MonoBehaviour
     [Header("회전 속도 설정")] // 헤더 추가
     [SerializeField] private float rotationSpeed = 10f; // 캐릭터 회전 속도 추가
 
+    [Header("카메라 설정")]
+    [SerializeField] private Transform cameraTransform; // 카메라 Transform 참조 추가
+
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
         // CameraController 컴포넌트 찾기 (Main Camera에 있다고 가정)
-        // Camera.main 대신 FindObjectOfType 또는 다른 방식으로 찾아도 됩니다.
         
+        // cameraTransform 초기화
+        if (cameraTransform == null && cameraController != null)
+        {
+            cameraTransform = cameraController.transform;
+        }
+        else if (cameraTransform == null)
+        {
+            cameraTransform = Camera.main.transform;
+        }
 
         if (animator == null)
             animator = GetComponent<Animator>();
@@ -132,6 +158,7 @@ public class IntegratedPlayerController : MonoBehaviour
 
         // ------ 마우스/키보드 입력 ------
         HandleInput();
+        HandleAimInput();
 
         // ------ Normal / Aiming 상태 판별 ------
         if (!isAiming)
@@ -150,6 +177,37 @@ public class IntegratedPlayerController : MonoBehaviour
 
         // ------ 현재 애니메이션 적용 ------
         ApplyAnimationState();
+
+        // 이동 입력 감지 및 애니메이션 상태 갱신 (매 프레임 체크)
+        float h = Input.GetAxis("Horizontal");
+        float v = Input.GetAxis("Vertical");
+        bool isMovingNow = Mathf.Abs(h) > 0.1f || Mathf.Abs(v) > 0.1f;
+        
+        // 매 프레임 애니메이션 상태 확인 (isMovingNow != IsMoving 조건 제거)
+        if (isAiming)
+        {
+            // 에임 상태에서의 이동 애니메이션 처리
+            if (isMovingNow)
+            {
+                if (v > 0.1f)
+                    SetAnimationState(PlayerAnimState.AimWalkF);
+                else if (v < -0.1f)
+                    SetAnimationState(PlayerAnimState.AimWalkB);
+                else if (h > 0.1f)
+                    SetAnimationState(PlayerAnimState.AimWalkR);
+                else if (h < -0.1f)
+                    SetAnimationState(PlayerAnimState.AimWalkL);
+            }
+            else
+            {
+                SetAnimationState(PlayerAnimState.AimIdle);
+            }
+        }
+        else if (isMovingNow != IsMoving || isMovingNow) // 상태 변경되었거나 이동 중일 때
+        {
+            // 일반 상태에서의 이동 애니메이션 처리
+            UpdateAnimationBasedOnMovement();
+        }
     }
 
     // =========================================================
@@ -445,25 +503,28 @@ public class IntegratedPlayerController : MonoBehaviour
     // =========================================================
     private void HandleStamina()
     {
-        // 달리기 처리
-        // 예: Shift 입력 시 체력 감소
-        // 체력 처리 함수에서 처리 필요
-        if (isSprinting && controller.velocity.magnitude > 0.02f)
+        // --- 디버그 로그 활성화 ---
+        //Debug.Log($"HandleStamina Check: isSprinting={isSprinting}, Velocity={controller.velocity} (Mag={controller.velocity.magnitude}), Stamina={currentStamina}, isGrounded={isGrounded}");
+        // ----------------------
+
+        bool staminaChanged = false;
+
+        if (isSprinting && controller.velocity.magnitude > 0.02f) // 이 0.02f 값 확인!
         {
-            currentStamina -= staminaDecreaseRate * Time.deltaTime;
-            if (currentStamina < 0f)
-            {
-                currentStamina = 0f;
-                // 스태미나 0% 이면 달리기 불가능
-                isSprinting = false;
-            }
+            // ... (스태미나 감소 로직) ...
         }
         else
         {
-            // 재생
-            currentStamina += staminaRecoverRate * Time.deltaTime;
-            if (currentStamina > maxStamina)
-                currentStamina = maxStamina;
+             if (isSprinting) // isSprinting이 true인데도 이쪽으로 온다면 velocity 문제
+             {
+                 //Debug.LogWarning($"Sprinting is TRUE, but velocity magnitude ({controller.velocity.magnitude}) is too low!");
+             }
+            // ... (스태미나 재생 로직) ...
+        }
+
+        if (staminaChanged)
+        {
+            UIManager.Instance?.UpdateStaminaUI(currentStamina, maxStamina);
         }
     }
 
@@ -506,7 +567,7 @@ public class IntegratedPlayerController : MonoBehaviour
         animator.SetBool(ANIM_PARAM_IS_CROUCH_IDLE, false);
         animator.SetBool(ANIM_PARAM_IS_CROUCH_WALK, false);
         animator.SetBool(ANIM_PARAM_IS_CROUCH_JOG, false);
-        animator.SetBool(ANIM_PARAM_IS_TAKE, false);
+        //animator.SetBool(ANIM_PARAM_IS_TAKE, false);
         animator.SetBool(ANIM_PARAM_IS_DIE, false);
         animator.SetBool(ANIM_PARAM_IS_AIM_IDLE, false);
         animator.SetBool(ANIM_PARAM_IS_AIM_SHOOT, false);
@@ -541,9 +602,9 @@ public class IntegratedPlayerController : MonoBehaviour
             case PlayerAnimState.CrouchJog:
                 animator.SetBool(ANIM_PARAM_IS_CROUCH_JOG, true);
                 break;
-            case PlayerAnimState.Take:
-                animator.SetBool(ANIM_PARAM_IS_TAKE, true);
-                break;
+           //case PlayerAnimState.Take:
+                //animator.SetBool(ANIM_PARAM_IS_TAKE, true);
+                //break;
             case PlayerAnimState.Die1:
                 animator.SetBool(ANIM_PARAM_IS_DIE, true);
                 break;
@@ -605,15 +666,18 @@ public class IntegratedPlayerController : MonoBehaviour
             }
 
             // --- 중요: 다른 상태들로의 전환 조건 ---
-            // 현재 애니메이션이 80% 미만으로 재생되었다면, 새로운 상태로 전환하지 않음
-            if (animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 0.02f)
+            // 현재 애니메이션이 % 미만으로 재생되었다면, 새로운 상태로 전환하지 않음
+            if (animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 0.05f)
             {
                 return; // 상태 변경 취소하고 함수 종료
             }
-            // 80% 이상 재생되었으면 아래 코드로 진행하여 상태 변경
+            // % 이상 재생되었으면 아래 코드로 진행하여 상태 변경
         }
 
-        // 현재 애니메이션이 끝났거나, 80% 이상 재생된 경우 상태 변경
+        // 새로운 상태로 전환하기 전에 모든 애니메이션 파라미터 초기화
+        ResetAllAnimationParameters();
+
+        // 현재 애니메이션이 끝났거나, 50% 이상 재생된 경우 상태 변경
         currentAnimState = newState;
     }
 
@@ -641,5 +705,246 @@ public class IntegratedPlayerController : MonoBehaviour
         {
             staminaSlider.value = currentStamina / maxStamina;
         }
+    }
+
+    // 에임 입력 처리 함수 수정
+    private void HandleAimInput()
+    {
+        // 마우스 좌클릭 감지
+        if (Input.GetMouseButtonDown(0)) // 좌클릭
+        {
+            if (!isAiming)
+            {
+                Debug.Log("에임 상태로 진입 시도");
+                // 노말 상태에서 좌클릭 -> 에임 모드 진입
+                isAiming = true;
+                lastAimInputTime = Time.time; // 타이머 초기화
+                
+                // 혼합형 회전 처리
+                transform.rotation = Quaternion.Euler(0, cameraTransform.eulerAngles.y, 0);
+                
+                // 모든 노말 애니메이션 파라미터 비활성화
+                ResetAllAnimationParameters();
+                
+                // 에임 애니메이션 활성화
+                animator.SetBool(ANIM_PARAM_IS_AIM_IDLE, true);
+            }
+            else
+            {
+                // 에임 상태에서 좌클릭 -> 발사 시도
+                TryFireWeapon();
+                lastAimInputTime = Time.time; // 타이머 리셋
+            }
+        }
+        
+        // 에임 모드 타임아웃 체크
+        if (isAiming && Time.time - lastAimInputTime > aimTimeoutDuration)
+        {
+            Debug.Log("에임 상태 타임아웃으로 종료");
+            // 타임아웃 - 에임 모드 해제
+            isAiming = false;
+            
+            // 모든 애니메이션 파라미터 초기화
+            ResetAllAnimationParameters();
+            
+            // 현재 상태에 맞는 애니메이션 설정
+            if (IsMoving)
+            {
+                if (isSprinting)
+                    SetAnimationState(PlayerAnimState.Run);
+                else
+                    SetAnimationState(PlayerAnimState.NormalIdle);
+            }
+            else
+            {
+                SetAnimationState(PlayerAnimState.NormalIdle);
+            }
+        }
+        
+        // 에임 모드에서 입력 감지 시 타이머 리셋
+        if (isAiming && (Mathf.Abs(Input.GetAxis("Horizontal")) > 0.1f || 
+                         Mathf.Abs(Input.GetAxis("Vertical")) > 0.1f ||
+                         Input.GetButtonDown("Jump") ||
+                         Input.GetKeyDown(KeyCode.F) || // 상호작용 키
+                         Input.GetMouseButtonDown(0) || // 좌클릭
+                         Input.GetMouseButtonDown(1)))  // 우클릭
+        {
+            lastAimInputTime = Time.time;
+        }
+        
+        // 에임 모드에서 혼합형 회전 처리
+        if (isAiming)
+        {
+            // 이동 입력이 없을 때 서서히 카메라 방향으로 회전
+            float h = Input.GetAxis("Horizontal");
+            float v = Input.GetAxis("Vertical");
+            
+            // cameraTransform이 null인 경우 처리
+            if (cameraTransform == null)
+            {
+                if (cameraController != null)
+                    cameraTransform = cameraController.transform;
+                else
+                    cameraTransform = Camera.main.transform;
+                    
+                // 카메라를 찾을 수 없는 경우 처리 종료
+                if (cameraTransform == null)
+                    return;
+            }
+            
+            if (Mathf.Abs(h) < 0.1f && Mathf.Abs(v) < 0.1f)
+            {
+                // 카메라 방향으로 부드럽게 회전
+                float targetYRotation = cameraTransform.eulerAngles.y;
+                float currentYRotation = transform.eulerAngles.y;
+                
+                // 회전 보간 (Slerp)
+                float newYRotation = Mathf.LerpAngle(currentYRotation, targetYRotation, Time.deltaTime * rotationSpeed * 0.5f);
+                transform.rotation = Quaternion.Euler(0, newYRotation, 0);
+            }
+        }
+    }
+
+    // 모든 애니메이션 파라미터 초기화 함수 수정
+    private void ResetAllAnimationParameters()
+    {
+        // 노말 상태 애니메이션 파라미터
+        animator.SetBool(ANIM_PARAM_IS_IDLE, false);
+        animator.SetBool(ANIM_PARAM_IS_WALK, false);
+        animator.SetBool(ANIM_PARAM_IS_RUN, false);
+        animator.SetBool(ANIM_PARAM_IS_CROUCH_IDLE, false);
+        animator.SetBool(ANIM_PARAM_IS_CROUCH_WALK, false);
+        animator.SetBool(ANIM_PARAM_IS_CROUCH_JOG, false);
+        
+        // 에임 상태 애니메이션 파라미터
+        animator.SetBool(ANIM_PARAM_IS_AIM_IDLE, false);
+        // 발사는 트리거이므로 리셋에서 제외 (animator.ResetTrigger로 필요시 따로 처리)
+        // animator.SetBool(ANIM_PARAM_IS_AIM_SHOOT, false); // 이 부분 제거 또는 주석 처리
+        animator.SetBool(ANIM_PARAM_IS_AIM_JOG, false);
+        animator.SetBool(ANIM_PARAM_IS_AIM_WALK_F, false);
+        animator.SetBool(ANIM_PARAM_IS_AIM_WALK_B, false);
+        animator.SetBool(ANIM_PARAM_IS_AIM_WALK_L, false);
+        animator.SetBool(ANIM_PARAM_IS_AIM_WALK_R, false);
+        animator.SetBool(ANIM_PARAM_IS_AIM_CROUCH_IDLE, false);
+        animator.SetBool(ANIM_PARAM_IS_AIM_CROUCH_WALK, false);
+        animator.SetBool(ANIM_PARAM_IS_AIM_CROUCH_SHOOT, false);
+    }
+
+    // 무기 발사 시도 함수 수정
+    private void TryFireWeapon()
+    {
+        // 발사 간격 체크
+        if (Time.time < nextFireTime)
+            return;
+        
+        // 다음 발사 시간 설정
+        nextFireTime = Time.time + fireRate;
+        
+        // 발사 상태 설정
+        isShooting = true;
+        
+        // 발사 애니메이션 트리거 - 이름 일관성 유지
+        animator.SetTrigger(ANIM_PARAM_TRIGGER_SHOOT); // "SHOOT" 트리거 파라미터 사용
+        
+        // 레이캐스트 발사
+        FireWeapon();
+        
+        // 발사 상태 리셋
+        StartCoroutine(ResetShootingState(0.2f));
+    }
+
+    // 발사 상태 리셋 코루틴
+    private IEnumerator ResetShootingState(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        isShooting = false;
+    }
+
+    // 실제 무기 발사 로직
+    private void FireWeapon()
+    {
+        // cameraTransform이 null인 경우 처리
+        if (cameraTransform == null)
+        {
+            if (cameraController != null)
+                cameraTransform = cameraController.transform;
+            else
+                cameraTransform = Camera.main.transform;
+            
+            // 카메라를 찾을 수 없는 경우 처리 종료
+            if (cameraTransform == null)
+            {
+                Debug.LogError("카메라를 찾을 수 없습니다!");
+                return;
+            }
+        }
+        
+        // 발사 지점과 방향 설정 (카메라 위치에서 카메라 전방)
+        Vector3 rayOrigin = cameraTransform.position;
+        Vector3 rayDirection = cameraTransform.forward;
+        
+        RaycastHit hit;
+        if (Physics.Raycast(rayOrigin, rayDirection, out hit, weaponRange))
+        {
+            // 레이캐스트 히트 처리
+            Debug.Log("Hit: " + hit.transform.name);
+            
+            // 데미지 처리 로직 (몬스터 등에 데미지 적용)
+            Monster_AI monster = hit.transform.GetComponent<Monster_AI>();
+            if (monster != null)
+            {
+                monster.TakeDamage(10f); // 데미지 값은 조정 필요
+            }
+            
+            // 추후 발사 이펙트 구현
+            // SpawnImpactEffect(hit.point, hit.normal);
+        }
+        
+        // 추후 총구 이펙트 및 사운드 구현
+        // PlayMuzzleEffect();
+        // PlayFireSound();
+    }
+
+    // 현재 움직임에 기반하여 애니메이션 상태 업데이트
+    private void UpdateAnimationBasedOnMovement()
+    {
+        float h = Input.GetAxis("Horizontal");
+        float v = Input.GetAxis("Vertical");
+        bool isMoving = Mathf.Abs(h) > 0.1f || Mathf.Abs(v) > 0.1f;
+        
+        if (isCrouching)
+        {
+            if (isSprinting && v > 0.1f)
+            {
+                SetAnimationState(PlayerAnimState.CrouchJog);
+            }
+            else if (isMoving)
+            {
+                SetAnimationState(PlayerAnimState.CrouchWalk);
+            }
+            else
+            {
+                SetAnimationState(PlayerAnimState.CrouchIdle);
+            }
+        }
+        else if (isSprinting && v > 0.1f)
+        {
+            SetAnimationState(PlayerAnimState.Run);
+        }
+        else if (isMoving)
+        {
+            SetAnimationState(PlayerAnimState.Walk);
+        }
+        else
+        {
+            SetAnimationState(PlayerAnimState.NormalIdle);
+        }
+    }
+
+    // 트리거 파라미터 초기화 함수
+    private void ResetAnimationTriggers()
+    {
+        // 발사 트리거 초기화
+        animator.ResetTrigger(ANIM_PARAM_TRIGGER_SHOOT);
     }
 }

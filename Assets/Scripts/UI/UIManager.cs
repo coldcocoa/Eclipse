@@ -34,7 +34,9 @@ public class UIManager : MonoBehaviour
     [Header("플레이어 정보")]
     [SerializeField] private TextMeshProUGUI goldText; // 골드 표시 텍스트 (TMP)
     // [SerializeField] private Text goldText; // 일반 Text 사용 시
-    // --------------------
+    // --- 스태미나 슬라이더 참조 추가 ---
+    [SerializeField] private Slider staminaSlider;
+    // --------------------------------
 
     // 싱글톤
     public static UIManager Instance { get; private set; }
@@ -71,6 +73,17 @@ public class UIManager : MonoBehaviour
         interactionPromptPanel?.SetActive(false);
         chatHistoryPanel?.SetActive(false);
         UpdateChatHistoryUI();
+
+        // --- 스태미나 슬라이더 초기화 ---
+        staminaSlider?.gameObject.SetActive(true); // 슬라이더 활성화 (필요에 따라 false)
+        // 초기 값 설정 (보통 가득 찬 상태로 시작)
+        if (staminaSlider != null)
+        {
+            staminaSlider.minValue = 0f;
+            staminaSlider.maxValue = 1f; // 비율로 표시하므로 0~1 범위 사용
+            staminaSlider.value = 1f;    // 가득 찬 상태
+        }
+        // -----------------------------
 
         // 게임 시작 시 초기 골드 UI 업데이트
         if (PlayerWallet.Instance != null)
@@ -310,6 +323,28 @@ public class UIManager : MonoBehaviour
         interactionPromptPanel.SetActive(false);
     }
     
+
+    // --- 스태미나 UI 업데이트 함수 추가 ---
+    public void UpdateStaminaUI(float currentStamina, float maxStamina)
+    {
+        if (staminaSlider == null)
+        {
+            // Debug.LogWarning("Stamina Slider is not assigned in UIManager.");
+            return;
+        }
+
+        if (maxStamina <= 0) // 0으로 나누기 방지
+        {
+            staminaSlider.value = 0f;
+        }
+        else
+        {
+            // 현재 스태미나 비율 계산 (0과 1 사이)
+            float staminaRatio = Mathf.Clamp01(currentStamina / maxStamina);
+            staminaSlider.value = staminaRatio;
+        }
+    }
+    // ------------------------------------
 
     // --- 골드 UI 업데이트 함수 추가 ---
     public void UpdateGoldUI(int goldAmount)

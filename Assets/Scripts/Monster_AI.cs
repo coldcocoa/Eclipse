@@ -68,38 +68,38 @@ public class Monster_AI : MonoBehaviour
 
         if (player == null)
         {
-            Debug.LogError("플레이어를 찾을 수 없습니다. 'Player' 태그를 확인하세요.", this);
-            enabled = false;
+            Debug.LogWarning("플레이어를 찾을 수 없습니다. Player 태그를 확인하세요.", this);
         }
+
+        currentHp = maxHp; // 시작 시 체력 초기화
+        agent.speed = moveSpeed; // NavMeshAgent 속도 설정
+        lastActionTime = -patrolCycleTime; // 게임 시작 시 바로 행동 시작하도록
+
+        // --- 체력 바 생성 ---
+        if (healthBarPrefab != null)
+        {
+            // UI 생성 위치 결정 (uiSpawnPoint 없으면 몬스터 루트 사용)
+            Transform spawnParent = (uiSpawnPoint != null) ? uiSpawnPoint : transform;
+            // World Space UI는 보통 특정 부모 없이 생성하거나, UI용 Canvas 아래에 생성합니다.
+            // 여기서는 일단 부모 없이 생성합니다.
+            GameObject healthBarGO = Instantiate(healthBarPrefab, spawnParent.position, Quaternion.identity);
+            healthBarInstance = healthBarGO.GetComponent<MonsterHealthUI>();
+            if (healthBarInstance != null)
+            {
+                healthBarInstance.Setup(this); // MonsterHealthUI에 몬스터 정보 전달
+            }
+            else
+            {
+                 Debug.LogError("Health Bar Prefab에 MonsterHealthUI 스크립트가 없습니다.", this);
+                 Destroy(healthBarGO);
+            }
+        }
+        // ------------------
     }
 
     void Start()
     {
-        currentHp = maxHp;
-        agent.speed = moveSpeed;
         agent.stoppingDistance = attackRange * 0.8f; // 공격 범위보다 약간 앞에서 멈추도록 설정
-        lastActionTime = -patrolCycleTime; // 시작 시 바로 순찰 시작하도록
-        
-        // --- 체력 바 생성 및 설정 ---
-        if (healthBarPrefab != null)
-        {
-            // UI 생성 위치 결정
-            Transform spawnTransform = (uiSpawnPoint != null) ? uiSpawnPoint : transform;
-            // 체력 바 인스턴스 생성 (위치는 MonsterHealthUI의 LateUpdate에서 조정됨)
-            GameObject healthBarGO = Instantiate(healthBarPrefab, spawnTransform.position, Quaternion.identity);
-            healthBarInstance = healthBarGO.GetComponent<MonsterHealthUI>();
-
-            if (healthBarInstance != null)
-            {
-                healthBarInstance.Setup(this); // 몬스터 정보 전달하여 초기화
-            }
-            else
-            {
-                Debug.LogError("Health Bar Prefab에 MonsterHealthUI 스크립트가 없습니다.", this);
-                Destroy(healthBarGO); // 스크립트 없으면 파괴
-            }
-        }
-        // ------------------------
     }
 
     void Update()
@@ -108,7 +108,7 @@ public class Monster_AI : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.K))
         {
-            TakeDamage(15f); // 예시 데미지
+            TakeDamage(10f); // 예시 데미지
         }
 
         // 상태에 따른 로직 실행
@@ -409,20 +409,26 @@ public class Monster_AI : MonoBehaviour
         if (isDead) return;
 
         currentHp -= damage;
+        // 체력이 0 미만으로 내려가지 않도록 제한
+        currentHp = Mathf.Max(currentHp, 0f);
+
         Debug.Log($"{gameObject.name} HP: {currentHp}/{maxHp}");
+
+        // --- 체력 바 부드럽게 업데이트 호출 ---
+        healthBarInstance?.UpdateHealthSmoothly(currentHp, maxHp);
+        // ------------------------------------
 
         // --- 데미지 숫자 생성 ---
         if (damageNumberPrefab != null)
         {
-            // UI 생성 위치 결정
             Transform spawnTransform = (uiSpawnPoint != null) ? uiSpawnPoint : transform;
-            Vector3 spawnPosition = spawnTransform.position + Vector3.up * 1.0f; // 약간 위에서 생성
+            Vector3 spawnPosition = spawnTransform.position + Vector3.up * 1.0f;
 
             GameObject damageNumGO = Instantiate(damageNumberPrefab, spawnPosition, Quaternion.identity);
             DamageNumber damageNumScript = damageNumGO.GetComponent<DamageNumber>();
             if (damageNumScript != null)
             {
-                damageNumScript.SetDamage(damage); // 데미지 값 설정
+                damageNumScript.SetDamage(damage);
             }
             else
             {
@@ -434,12 +440,12 @@ public class Monster_AI : MonoBehaviour
 
         if (currentHp <= 0)
         {
-            currentHp = 0;
+            // isDead 플래그는 Die 상태 전환 시 설정하는 것이 더 적합할 수 있음
+            // isDead = true;
             TransitionToState(MonsterState.Dead);
         }
         else
         {
-            // 죽지 않았으면 Hit 상태로 전환
             TransitionToState(MonsterState.Hit);
         }
     }
