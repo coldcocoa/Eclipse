@@ -7,7 +7,7 @@ using System.Collections.Generic; // List 사용
 public class Monster_AI : MonoBehaviour
 {
     [Header("몬스터 스탯")]
-    [SerializeField] private float maxHp = 30f;
+    [SerializeField] public float maxHp = 30f; // public 또는 프로퍼티로 접근 가능해야 함
     [SerializeField] private float moveSpeed = 3.5f;
     [SerializeField] private float detectionRange = 15f; // 플레이어 감지 범위
     [SerializeField] private float attackRange = 2f;    // 공격 범위
@@ -22,8 +22,17 @@ public class Monster_AI : MonoBehaviour
     [SerializeField] private DropTable dropTable;
     [SerializeField] private GameObject lootableObjectPrefab; // 루팅 가능 오브젝트 프리팹
 
+    // --- UI 관련 필드 추가 ---
+    [Header("UI 설정")]
+    [SerializeField] private GameObject healthBarPrefab; // 체력 바 UI 프리팹
+    [SerializeField] private GameObject damageNumberPrefab; // 데미지 숫자 UI 프리팹
+    [SerializeField] private Transform uiSpawnPoint; // UI 생성 위치 (옵션, 없으면 몬스터 루트 사용)
+
+    private MonsterHealthUI healthBarInstance; // 생성된 체력 바 인스턴스 참조
+    // ------------------------
+
     // 내부 변수
-    public float currentHp;
+    public float currentHp; // public 유지 (MonsterHealthUI에서 접근)
     private Transform player; // 플레이어 Transform
     private NavMeshAgent agent;
     private Animator animator;
@@ -55,17 +64,12 @@ public class Monster_AI : MonoBehaviour
     {
         agent = GetComponent<NavMeshAgent>();
         animator = GetComponent<Animator>();
+        player = GameObject.FindGameObjectWithTag("Player")?.transform; // Null 조건 연산자 사용
 
-        // 플레이어 찾기 (태그가 "Player"라고 가정)
-        GameObject playerObject = GameObject.FindGameObjectWithTag("Player");
-        if (playerObject != null)
-        {
-            player = playerObject.transform;
-        }
-        else
+        if (player == null)
         {
             Debug.LogError("플레이어를 찾을 수 없습니다. 'Player' 태그를 확인하세요.", this);
-            enabled = false; // 플레이어 없으면 AI 비활성화
+            enabled = false;
         }
     }
 
@@ -76,6 +80,26 @@ public class Monster_AI : MonoBehaviour
         agent.stoppingDistance = attackRange * 0.8f; // 공격 범위보다 약간 앞에서 멈추도록 설정
         lastActionTime = -patrolCycleTime; // 시작 시 바로 순찰 시작하도록
         
+        // --- 체력 바 생성 및 설정 ---
+        if (healthBarPrefab != null)
+        {
+            // UI 생성 위치 결정
+            Transform spawnTransform = (uiSpawnPoint != null) ? uiSpawnPoint : transform;
+            // 체력 바 인스턴스 생성 (위치는 MonsterHealthUI의 LateUpdate에서 조정됨)
+            GameObject healthBarGO = Instantiate(healthBarPrefab, spawnTransform.position, Quaternion.identity);
+            healthBarInstance = healthBarGO.GetComponent<MonsterHealthUI>();
+
+            if (healthBarInstance != null)
+            {
+                healthBarInstance.Setup(this); // 몬스터 정보 전달하여 초기화
+            }
+            else
+            {
+                Debug.LogError("Health Bar Prefab에 MonsterHealthUI 스크립트가 없습니다.", this);
+                Destroy(healthBarGO); // 스크립트 없으면 파괴
+            }
+        }
+        // ------------------------
     }
 
     void Update()
@@ -84,7 +108,7 @@ public class Monster_AI : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.K))
         {
-            TakeDamage(maxHp);
+            TakeDamage(15f); // 예시 데미지
         }
 
         // 상태에 따른 로직 실행
@@ -260,6 +284,14 @@ public class Monster_AI : MonoBehaviour
                 // ------------------------
 
                 Destroy(gameObject, 5f); // 5초 후 오브젝트 제거 (Die 애니메이션 시간 고려)
+
+                // --- 체력 바 비활성화 ---
+                if (healthBarInstance != null)
+                {
+                    Destroy(healthBarInstance.gameObject);
+                }
+                // ------------------------
+
                 break;
         }
     }
@@ -378,6 +410,27 @@ public class Monster_AI : MonoBehaviour
 
         currentHp -= damage;
         Debug.Log($"{gameObject.name} HP: {currentHp}/{maxHp}");
+
+        // --- 데미지 숫자 생성 ---
+        if (damageNumberPrefab != null)
+        {
+            // UI 생성 위치 결정
+            Transform spawnTransform = (uiSpawnPoint != null) ? uiSpawnPoint : transform;
+            Vector3 spawnPosition = spawnTransform.position + Vector3.up * 1.0f; // 약간 위에서 생성
+
+            GameObject damageNumGO = Instantiate(damageNumberPrefab, spawnPosition, Quaternion.identity);
+            DamageNumber damageNumScript = damageNumGO.GetComponent<DamageNumber>();
+            if (damageNumScript != null)
+            {
+                damageNumScript.SetDamage(damage); // 데미지 값 설정
+            }
+            else
+            {
+                 Debug.LogError("Damage Number Prefab에 DamageNumber 스크립트가 없습니다.", this);
+                 Destroy(damageNumGO);
+            }
+        }
+        // ------------------------
 
         if (currentHp <= 0)
         {

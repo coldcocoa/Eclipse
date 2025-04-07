@@ -41,6 +41,7 @@ public class PlayerWallet : MonoBehaviour
             Debug.Log($"골드 획득: +{amount} / 현재 골드: {currentGold}");
             // --- UI 업데이트 호출 추가 ---
             UIManager.Instance?.UpdateGoldUI(currentGold);
+            UIManager.Instance?.ShowMessage($"{amount} 골드 획득");
             // --------------------------
         }
     }

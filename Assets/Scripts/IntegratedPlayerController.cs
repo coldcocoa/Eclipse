@@ -211,7 +211,7 @@ public class IntegratedPlayerController : MonoBehaviour
             {
                 SetAnimationState(PlayerAnimState.Run);
             }
-            else if (Mathf.Abs(h) > 0.05f || Mathf.Abs(v) > 0.05f)
+            else if (Mathf.Abs(h) > 0.02f || Mathf.Abs(v) > 0.02f)
             {
                 SetAnimationState(PlayerAnimState.Walk);
             }
@@ -274,7 +274,7 @@ public class IntegratedPlayerController : MonoBehaviour
         if (isCtrl)
         {
             // 총 발사 상태
-            if (Mathf.Abs(h) < 0.1f && Mathf.Abs(v) < 0.1f)
+            if (Mathf.Abs(h) < 0.02f && Mathf.Abs(v) < 0.02f)
             {
                 // 키 입력 초기화
                 SetAnimationState(PlayerAnimState.AimCrouchIdle);
@@ -288,7 +288,7 @@ public class IntegratedPlayerController : MonoBehaviour
         else
         {
             // 일반 이동 상태
-            if (shiftPressed && v > 0.1f)
+            if (shiftPressed && v > 0.02f)
             {
                 // 총 발사 상태
                 SetAnimationState(PlayerAnimState.AimJog);
@@ -296,19 +296,19 @@ public class IntegratedPlayerController : MonoBehaviour
             else
             {
                 // 예외 상태 AimWalkF/B/L/R
-                if (v > 0.1f)
+                if (v > 0.02f)
                 {
                     SetAnimationState(PlayerAnimState.AimWalkF);
                 }
-                else if (v < -0.1f)
+                else if (v < -0.02f)
                 {
                     SetAnimationState(PlayerAnimState.AimWalkB);
                 }
-                else if (h > 0.1f)
+                else if (h > 0.02f)
                 {
                     SetAnimationState(PlayerAnimState.AimWalkR);
                 }
-                else if (h < -0.1f)
+                else if (h < -0.02f)
                 {
                     SetAnimationState(PlayerAnimState.AimWalkL);
                 }
@@ -448,7 +448,7 @@ public class IntegratedPlayerController : MonoBehaviour
         // 달리기 처리
         // 예: Shift 입력 시 체력 감소
         // 체력 처리 함수에서 처리 필요
-        if (isSprinting && controller.velocity.magnitude > 0.1f)
+        if (isSprinting && controller.velocity.magnitude > 0.02f)
         {
             currentStamina -= staminaDecreaseRate * Time.deltaTime;
             if (currentStamina < 0f)
@@ -606,7 +606,7 @@ public class IntegratedPlayerController : MonoBehaviour
 
             // --- 중요: 다른 상태들로의 전환 조건 ---
             // 현재 애니메이션이 80% 미만으로 재생되었다면, 새로운 상태로 전환하지 않음
-            if (animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 0.05f)
+            if (animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 0.02f)
             {
                 return; // 상태 변경 취소하고 함수 종료
             }

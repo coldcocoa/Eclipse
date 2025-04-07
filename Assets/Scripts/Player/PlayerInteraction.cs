@@ -16,6 +16,7 @@ public class PlayerInteraction : MonoBehaviour
             if (currentInteractable.AttemptLoot(this))
             {
                 isLooting = true; // 루팅 시작 상태로 변경
+                UIManager.Instance.StartCoroutine(UIManager.Instance.ShowInteractionPrompt(2f));
                 // UIManager가 루팅 진행 UI를 표시하고 완료/취소 시 콜백 호출
             }
         }
@@ -36,7 +37,7 @@ public class PlayerInteraction : MonoBehaviour
     {
         currentInteractable = lootable;
         // 여기에 "E키 눌러 상호작용" UI 힌트 표시 로직 추가
-        // UIManager.Instance.ShowInteractionPrompt(true);
+         //UIManager.Instance.ShowInteractionPrompt(true);
         Debug.Log($"상호작용 가능: {lootable.gameObject.name}");
     }
 
