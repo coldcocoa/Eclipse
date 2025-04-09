@@ -4,8 +4,15 @@ using System.Collections;
 
 public class IntegratedPlayerController : MonoBehaviour
 {
-    // 애니메이션 파라미터 상수 정의 (클래스 상단 부분에 추가)
-    private const string ANIM_PARAM_TRIGGER_SHOOT = "SHOOT"; // 발사 트리거 파라미터
+    // 애니메이션 파라미터 상수 정의 변경
+    private const string ANIM_PARAM_SPEED = "Speed";       // 이동 속도 (0~1)
+    private const string ANIM_PARAM_DIRECTION = "Direction"; // 이동 방향 (-1~1)
+    private const string ANIM_PARAM_VERTICAL = "Vertical";   // 수직 입력 (-1~1)
+    private const string ANIM_PARAM_HORIZONTAL = "Horizontal"; // 수평 입력 (-1~1)
+    private const string ANIM_PARAM_IS_AIMING = "IsAiming";    // 에임 모드 여부
+    private const string ANIM_PARAM_IS_CROUCHING = "IsCrouching"; // 앉기 상태
+    private const string ANIM_PARAM_TRIGGER_SHOOT = "SHOOT";  // 발사 트리거
+    // ... 필요시 기존 Boolean 파라미터도 유지 가능 (전환 기간 동안)
 
     [Header("이동 속도 설정")]
     [SerializeField] private float moveSpeed = 5f;      // 일반 이동 속도
@@ -95,7 +102,6 @@ public class IntegratedPlayerController : MonoBehaviour
     private PlayerAnimState currentAnimState = PlayerAnimState.NormalIdle;
 
     // 애니메이션 파라미터 이름
-    private readonly string ANIM_PARAM_SPEED = "Speed";
     private readonly string ANIM_PARAM_IS_IDLE = "IDLE";
     private readonly string ANIM_PARAM_IS_WALK = "WALK";
     private readonly string ANIM_PARAM_IS_RUN = "RUN";
@@ -178,36 +184,8 @@ public class IntegratedPlayerController : MonoBehaviour
         // ------ 현재 애니메이션 적용 ------
         ApplyAnimationState();
 
-        // 이동 입력 감지 및 애니메이션 상태 갱신 (매 프레임 체크)
-        float h = Input.GetAxis("Horizontal");
-        float v = Input.GetAxis("Vertical");
-        bool isMovingNow = Mathf.Abs(h) > 0.1f || Mathf.Abs(v) > 0.1f;
-        
-        // 매 프레임 애니메이션 상태 확인 (isMovingNow != IsMoving 조건 제거)
-        if (isAiming)
-        {
-            // 에임 상태에서의 이동 애니메이션 처리
-            if (isMovingNow)
-            {
-                if (v > 0.1f)
-                    SetAnimationState(PlayerAnimState.AimWalkF);
-                else if (v < -0.1f)
-                    SetAnimationState(PlayerAnimState.AimWalkB);
-                else if (h > 0.1f)
-                    SetAnimationState(PlayerAnimState.AimWalkR);
-                else if (h < -0.1f)
-                    SetAnimationState(PlayerAnimState.AimWalkL);
-            }
-            else
-            {
-                SetAnimationState(PlayerAnimState.AimIdle);
-            }
-        }
-        else if (isMovingNow != IsMoving || isMovingNow) // 상태 변경되었거나 이동 중일 때
-        {
-            // 일반 상태에서의 이동 애니메이션 처리
-            UpdateAnimationBasedOnMovement();
-        }
+        // 애니메이션 파라미터 업데이트 (매 프레임)
+        UpdateAnimationParameters();
     }
 
     // =========================================================
@@ -946,5 +924,50 @@ public class IntegratedPlayerController : MonoBehaviour
     {
         // 발사 트리거 초기화
         animator.ResetTrigger(ANIM_PARAM_TRIGGER_SHOOT);
+    }
+
+    // Update 함수 수정 (애니메이션 파라미터 업데이트 호출)
+    private void UpdateAnimationParameters()
+    {
+        // 이동 입력 감지
+        float h = Input.GetAxis("Horizontal");
+        float v = Input.GetAxis("Vertical");
+        
+        // 파라미터 값 설정
+        animator.SetFloat(ANIM_PARAM_HORIZONTAL, h);
+        animator.SetFloat(ANIM_PARAM_VERTICAL, v);
+        
+        // 이동 속도 계산 (정규화된 0~1 값)
+        float targetSpeed = 0f;
+        
+        if (Mathf.Abs(h) > 0.1f || Mathf.Abs(v) > 0.1f)
+        {
+            // 이동 중일 때 속도 계산
+            if (isSprinting)
+                targetSpeed = 1.0f; // 달리기
+            else if (isAiming)
+                targetSpeed = 0.5f; // 에임 모드 걷기
+            else
+                targetSpeed = 0.5f; // 일반 걷기
+            
+            // 앉은 상태면 속도 감소
+            if (isCrouching)
+                targetSpeed *= 0.6f;
+        }
+        
+        // 이동 방향 계산 (전후좌우)
+        float direction = 0f;
+        if (Mathf.Abs(h) > 0.1f)
+            direction = h; // 좌우 입력이 있으면 해당 방향
+        else if (v < -0.1f)
+            direction = -0.5f; // 후진 (방향값 -0.5로 설정)
+        
+        // 주요 상태 설정
+        animator.SetBool(ANIM_PARAM_IS_AIMING, isAiming);
+        animator.SetBool(ANIM_PARAM_IS_CROUCHING, isCrouching);
+        
+        // 매 프레임 파라미터 업데이트
+        animator.SetFloat(ANIM_PARAM_SPEED, targetSpeed);
+        animator.SetFloat(ANIM_PARAM_DIRECTION, direction);
     }
 }
