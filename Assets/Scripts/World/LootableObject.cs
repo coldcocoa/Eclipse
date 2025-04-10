@@ -7,6 +7,7 @@ public class LootableObject : MonoBehaviour
 {
     [SerializeField] private float lifeTime = 30f; // 자동 소멸 시간
     [SerializeField] private SpriteRenderer iconRenderer; // 내용물 대표 아이콘 표시 (범용 주머니 이미지 사용 시)
+    [SerializeField] private bool isAiming; // 현재 에임 모드 상태
 
     private List<KeyValuePair<ItemData, int>> containedItems = new List<KeyValuePair<ItemData, int>>();
     private bool isBeingLooted = false;

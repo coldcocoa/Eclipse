@@ -127,6 +127,9 @@ public class IntegratedPlayerController : MonoBehaviour
     [Header("카메라 설정")]
     [SerializeField] private Transform cameraTransform; // 카메라 Transform 참조 추가
 
+    // 변수 추가
+    private bool wasMovingLastFrame = false;
+
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
@@ -361,75 +364,60 @@ public class IntegratedPlayerController : MonoBehaviour
     // =========================================================
     private void ProcessMovement()
     {
-        // 달리기 속도 처리
-        float finalSpeed = moveSpeed;
-
-        // 브레이크 처리
-        if (!isAiming && isSprinting)
-        {
-            finalSpeed = sprintSpeed;
-        }
-
-        // 앉아서 이동 처리
-        if (isCrouching)
-        {
-            // Aiming 이동 처리 앉아서 이동 속도 처리
-            finalSpeed = crouchSpeed;
-            // 예외 처리 CrouchJog 처리
-            // (Shift+Ctrl+W 처리)
-            if (isSprinting)
-            {
-                finalSpeed = crouchJogSpeed;
-            }
-        }
-
-        // 총 발사 처리 (조준 중일 때 속도 감소 등 필요시 추가)
-        // if (isAiming)
-        // {
-        //     // 예: finalSpeed *= 0.8f;
-        // }
-
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
 
-        // --- 이동 방향 계산 수정 ---
-        // 메인 카메라의 Transform 가져오기
-        Transform cameraTransform = Camera.main.transform;
-
-        // 카메라의 전방 방향과 오른쪽 방향을 기준으로 이동 방향 계산
-        Vector3 forward = cameraTransform.forward;
-        Vector3 right = cameraTransform.right;
-
-        // Y축 이동은 무시 (수평 이동만 고려)
-        forward.y = 0f;
-        right.y = 0f;
-        forward.Normalize();
-        right.Normalize();
-
-        // 입력값과 카메라 방향을 조합하여 최종 이동 방향 계산
-        Vector3 moveDir = (forward * v) + (right * h);
-        moveDir.Normalize(); // 대각선 이동 시 속도 보정
-
-        // --- 캐릭터 이동 ---
-        controller.Move(moveDir * finalSpeed * Time.deltaTime);
-
-        // --- 캐릭터 회전 (조준 중이 아닐 때만) ---
-        if (!isAiming && moveDir.sqrMagnitude > 0.01f) // 이동 방향이 있을 때만 회전
+        // 이동 입력 감지
+        if (Mathf.Abs(h) > 0.1f || Mathf.Abs(v) > 0.1f)
         {
-            // 목표 회전값 계산 (이동 방향을 바라보도록)
-            Quaternion targetRotation = Quaternion.LookRotation(moveDir);
-            // 현재 회전값에서 목표 회전값으로 부드럽게 회전
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+            wasMovingLastFrame = true;
+
+            // 달리기 속도 처리
+            float finalSpeed = moveSpeed;
+            if (!isAiming && isSprinting) finalSpeed = sprintSpeed;
+            if (isCrouching) finalSpeed = isSprinting ? crouchJogSpeed : crouchSpeed;
+
+            // --- 이동 방향 계산 (카메라 기준) ---
+            Transform camTransform = null;
+            if (cameraController != null) camTransform = cameraController.transform;
+            else if (cameraTransform != null) camTransform = cameraTransform;
+            else camTransform = Camera.main?.transform;
+
+            if (camTransform == null)
+            {
+                Debug.LogError("카메라 참조를 찾을 수 없습니다. 이동/회전 처리를 건너니다.");
+                return;
+            }
+
+            Vector3 camForward = camTransform.forward;
+            Vector3 camRight = camTransform.right;
+            camForward.y = 0f;
+            camRight.y = 0f;
+            camForward.Normalize();
+            camRight.Normalize();
+
+            Vector3 moveDir = (camForward * v) + (camRight * h);
+            moveDir.Normalize();
+
+            // --- 캐릭터 이동 ---
+            controller.Move(moveDir * finalSpeed * Time.deltaTime);
         }
-        // ------------------------------------
+        else
+        {
+            wasMovingLastFrame = false;
+        }
     }
 
     private void ApplyGravity()
     {
+        // 지면 체크
+        isGrounded = controller.isGrounded;
+        
         if (isGrounded && playerVelocity.y < 0)
         {
-            playerVelocity.y = -2f;
+            playerVelocity.y = -2f; // 약간의 하향력 유지 (지면 감지 신뢰성 향상)
         }
+        
         playerVelocity.y += gravityValue * Time.deltaTime;
         controller.Move(playerVelocity * Time.deltaTime);
     }
@@ -685,7 +673,7 @@ public class IntegratedPlayerController : MonoBehaviour
         }
     }
 
-    // 에임 입력 처리 함수 수정
+    // 에임 입력 처리 함수 수정 (회전 관련 부분 확인)
     private void HandleAimInput()
     {
         // 마우스 좌클릭 감지
@@ -756,28 +744,33 @@ public class IntegratedPlayerController : MonoBehaviour
             // 이동 입력이 없을 때 서서히 카메라 방향으로 회전
             float h = Input.GetAxis("Horizontal");
             float v = Input.GetAxis("Vertical");
-            
-            // cameraTransform이 null인 경우 처리
+
+            // cameraTransform이 null인 경우 처리 (ProcessMovement와 유사하게)
             if (cameraTransform == null)
             {
                 if (cameraController != null)
                     cameraTransform = cameraController.transform;
                 else
-                    cameraTransform = Camera.main.transform;
-                    
+                    cameraTransform = Camera.main?.transform; // Null-conditional operator 사용
+
                 // 카메라를 찾을 수 없는 경우 처리 종료
                 if (cameraTransform == null)
+                {
+                    Debug.LogError("HandleAimInput: 카메라를 찾을 수 없습니다!");
                     return;
+                }
             }
-            
+
+            // 에임 중 이동 시에는 CameraController에서 즉시 회전하므로,
+            // 여기서는 이동 입력이 없을 때만 카메라 방향으로 정렬합니다.
             if (Mathf.Abs(h) < 0.1f && Mathf.Abs(v) < 0.1f)
             {
                 // 카메라 방향으로 부드럽게 회전
                 float targetYRotation = cameraTransform.eulerAngles.y;
                 float currentYRotation = transform.eulerAngles.y;
-                
-                // 회전 보간 (Slerp)
-                float newYRotation = Mathf.LerpAngle(currentYRotation, targetYRotation, Time.deltaTime * rotationSpeed * 0.5f);
+
+                // 회전 보간 (LerpAngle 사용 권장)
+                float newYRotation = Mathf.LerpAngle(currentYRotation, targetYRotation, Time.deltaTime * rotationSpeed); // Slerp 대신 LerpAngle 사용, 속도 조절 가능
                 transform.rotation = Quaternion.Euler(0, newYRotation, 0);
             }
         }

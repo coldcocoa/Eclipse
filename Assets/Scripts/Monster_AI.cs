@@ -60,6 +60,11 @@ public class Monster_AI : MonoBehaviour
         Dead       // 죽음 (Die 애니메이션)
     }
 
+    // 스폰 시스템 연동을 위한 추가 필드
+    private SpawnPoint parentSpawnPoint; // 소환된 스폰 포인트 참조
+    private float hpMultiplier = 1.0f;
+    private float damageMultiplier = 1.0f;
+
     void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
@@ -292,6 +297,12 @@ public class Monster_AI : MonoBehaviour
                 }
                 // ------------------------
 
+                // SpawnPoint에 사망 알림 (풀링 시스템용)
+                if (parentSpawnPoint != null)
+                {
+                    parentSpawnPoint.OnMonsterDeath(gameObject);
+                }
+
                 break;
         }
     }
@@ -457,5 +468,74 @@ public class Monster_AI : MonoBehaviour
         Gizmos.DrawWireSphere(transform.position, detectionRange);
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, attackRange);
+    }
+
+    /// <summary>
+    /// 몬스터 초기화 함수 (SpawnPoint에서 호출)
+    /// </summary>
+    /// <param name="hpMult">체력 배율</param>
+    /// <param name="damageMult">공격력 배율</param>
+    /// <param name="spawnPoint">스폰 포인트 참조</param>
+    public void Initialize(float hpMult, float damageMult, SpawnPoint spawnPoint)
+    {
+        // 스폰 포인트 참조 저장
+        parentSpawnPoint = spawnPoint;
+        
+        // 스탯 배율 저장
+        hpMultiplier = hpMult;
+        damageMultiplier = damageMult;
+        
+        // HP 스케일링
+        maxHp *= hpMultiplier;
+        currentHp = maxHp;
+        
+        // 공격력 스케일링 (주석 처리된 attackDamage 사용 중이라면 주석 해제)
+        // attackDamage *= damageMultiplier;
+        
+        // 상태 초기 설정은 Awake/Start에서 이미 처리됨
+        
+        Debug.Log($"{gameObject.name} 초기화: HP {maxHp}");
+    }
+
+    /// <summary>
+    /// 몬스터 상태를 리셋합니다 (오브젝트 풀링 재사용 시 호출)
+    /// </summary>
+    public void ResetMonster()
+    {
+        // 체력 초기화
+        currentHp = maxHp;
+        
+        // 죽음 상태 초기화
+        isDead = false;
+        
+        // AI 기능 복원
+        if (agent != null)
+        {
+            agent.enabled = true;
+            agent.isStopped = false;
+        }
+        
+        // 충돌체 재활성화 (필요시)
+        Collider col = GetComponent<Collider>();
+        if (col != null) col.enabled = true;
+        
+        // 애니메이션 초기화
+        ResetAllAnimationBools();
+        
+        // 상태 초기화
+        currentState = MonsterState.Idle;
+        lastActionTime = Time.time - patrolCycleTime; // 즉시 행동 시작하도록
+        
+        // 체력바 재생성 필요시
+        if (healthBarInstance == null && healthBarPrefab != null)
+        {
+            Transform spawnParent = (uiSpawnPoint != null) ? uiSpawnPoint : transform;
+            GameObject healthBarGO = Instantiate(healthBarPrefab, spawnParent.position, Quaternion.identity);
+            healthBarInstance = healthBarGO.GetComponent<MonsterHealthUI>();
+            if (healthBarInstance != null)
+            {
+                healthBarInstance.Setup(this);
+            }
+        }
     }
 }
