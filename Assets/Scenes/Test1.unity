@@ -438,12 +438,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 198453252}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.064, y: 0.014, z: 0.631}
+  m_LocalRotation: {x: -0.50000036, y: 0.49999988, z: -0.49999994, w: -0.49999994}
+  m_LocalPosition: {x: 0.003471967, y: -0.58175313, z: 0.055131793}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 767699534}
+  m_Father: {fileID: 1596047040}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &254043784
 GameObject:
@@ -973,7 +973,7 @@ GameObject:
   - component: {fileID: 443106015}
   - component: {fileID: 443106014}
   m_Layer: 5
-  m_Name: Image
+  m_Name: Aim
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1207,6 +1207,8 @@ MonoBehaviour:
   fireRate: 0.25
   rotationSpeed: 15
   cameraTransform: {fileID: 65061823}
+  bulletTrailPrefab: {fileID: 0}
+  impactEffectPrefab: {fileID: 0}
 --- !u!143 &499605953
 CharacterController:
   m_ObjectHideFlags: 0
@@ -1855,7 +1857,7 @@ PrefabInstance:
     - {fileID: 284669242, guid: 9620196a5d390a64dbda2551f225ae81, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 2822715490018710606, guid: 9620196a5d390a64dbda2551f225ae81,
+    - targetCorrespondingSourceObject: {fileID: 6104513079164934256, guid: 9620196a5d390a64dbda2551f225ae81,
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 198453253}
@@ -1982,12 +1984,6 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 18.724121, y: 18.495743, z: 1}
   m_Center: {x: 2.0546875, y: -5.9047623, z: 0}
---- !u!4 &767699534 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 2822715490018710606, guid: 9620196a5d390a64dbda2551f225ae81,
-    type: 3}
-  m_PrefabInstance: {fileID: 711677431}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &778754744
 GameObject:
   m_ObjectHideFlags: 0
@@ -2497,8 +2493,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1055670127}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.29781085, y: -0.07393571, z: 0.02280953, w: -0.95148414}
-  m_LocalPosition: {x: 697.4923, y: 177.21387, z: 710.69}
+  m_LocalRotation: {x: 0.004601283, y: 0.99274945, z: -0.11098962, w: 0.04592132}
+  m_LocalPosition: {x: 672.6196, y: 164.39726, z: 799.0178}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4019,6 +4015,12 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1574441185}
   m_CullTransparentMesh: 1
+--- !u!4 &1596047040 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6104513079164934256, guid: 9620196a5d390a64dbda2551f225ae81,
+    type: 3}
+  m_PrefabInstance: {fileID: 711677431}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1627733562
 GameObject:
   m_ObjectHideFlags: 0
@@ -4849,6 +4851,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Monster_01
+      objectReference: {fileID: 0}
+    - target: {fileID: 5680161158443578165, guid: cb3ac1fad6018744ebe2ccf1edf7a4c9,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

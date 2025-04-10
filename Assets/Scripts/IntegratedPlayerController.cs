@@ -55,7 +55,7 @@ public class IntegratedPlayerController : MonoBehaviour
     [Header("에임 설정")]
     [SerializeField] private bool isAiming = false; // 현재 에임 모드 상태
     [SerializeField] private bool isShooting = false; // isShooting 변수 유지
-    [SerializeField] private float aimTimeoutDuration = 6.0f; // 에임 상태 유지 최대 시간 (초)
+    [SerializeField] private float aimTimeoutDuration = 4.0f; // 에임 상태 유지 최대 시간 (4초로 변경)
     [SerializeField] private Transform gunMuzzle; // 총구 위치 (Inspector에서 할당 필요)
     [SerializeField] private float weaponRange = 100f; // 무기 사거리
 
@@ -130,6 +130,10 @@ public class IntegratedPlayerController : MonoBehaviour
     // 변수 추가
     private bool wasMovingLastFrame = false;
 
+    [Header("무기 효과")]
+    [SerializeField] private GameObject bulletTrailPrefab; // 총알 궤적 프리팹 (선택적)
+    [SerializeField] private GameObject impactEffectPrefab; // 임팩트 효과 프리팹 (선택적)
+
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
@@ -151,6 +155,8 @@ public class IntegratedPlayerController : MonoBehaviour
         // HP, Stamina 초기화
         currentHP = maxHP;
         currentStamina = maxStamina;
+
+        CheckMuzzlePoint();
     }
 
     private void Update()
@@ -273,13 +279,16 @@ public class IntegratedPlayerController : MonoBehaviour
     // =========================================================
     private void UpdateAimingState()
     {
-        // 1) 6초 이상 지난 후 총 발사 가능
-        if (Time.time - lastShootTime > 6f)
+        // 에임 타임아웃 체크 (변수 사용)
+        if (Time.time - lastShootTime > aimTimeoutDuration)
         {
             // 총 발사 불가능
             isAiming = false;
             // 브레이크 Idle 상태로 변환
             SetAnimationState(PlayerAnimState.NormalIdle);
+            
+            // 다음 번 마우스 클릭에 즉시 에임 모드로 전환될 수 있도록
+            lastShootTime = 0f; // 단순히 0으로 설정
             return;
         }
 
@@ -448,6 +457,24 @@ public class IntegratedPlayerController : MonoBehaviour
                 isShooting = true;
                 lastShootTime = Time.time;
             }
+        }
+
+        // 에임 모드 전환 (마우스 좌클릭으로)
+        if (Input.GetMouseButtonDown(0) && !isAiming && !isShooting)
+        {
+            // 딜레이 조건 제거 또는 최소화
+            isAiming = true;
+            SetAnimationState(PlayerAnimState.AimIdle);
+            // IsAiming 파라미터 직접 설정 (중복 확인)
+            animator.SetBool(ANIM_PARAM_IS_AIMING, true);
+            Debug.Log("에임 모드 활성화");
+        }
+
+        // 에임 상태에서 마우스 좌클릭 시 발사
+        if (Input.GetMouseButtonDown(0) && isAiming)
+        {
+            TryFireWeapon();
+            lastShootTime = Time.time; // 마지막 발사 시간 업데이트
         }
     }
 
@@ -804,76 +831,98 @@ public class IntegratedPlayerController : MonoBehaviour
     // 무기 발사 시도 함수 수정
     private void TryFireWeapon()
     {
-        // 발사 간격 체크
-        if (Time.time < nextFireTime)
-            return;
-        
-        // 다음 발사 시간 설정
-        nextFireTime = Time.time + fireRate;
-        
-        // 발사 상태 설정
-        isShooting = true;
-        
-        // 발사 애니메이션 트리거 - 이름 일관성 유지
-        animator.SetTrigger(ANIM_PARAM_TRIGGER_SHOOT); // "SHOOT" 트리거 파라미터 사용
-        
-        // 레이캐스트 발사
-        FireWeapon();
-        
-        // 발사 상태 리셋
-        StartCoroutine(ResetShootingState(0.2f));
-    }
-
-    // 발사 상태 리셋 코루틴
-    private IEnumerator ResetShootingState(float delay)
-    {
-        yield return new WaitForSeconds(delay);
-        isShooting = false;
+        if (isAiming && Time.time > nextFireTime)
+        {
+            nextFireTime = Time.time + fireRate;
+            
+            // SHOOT 트리거 사용
+            animator.SetTrigger(ANIM_PARAM_TRIGGER_SHOOT);
+            
+            // 상태도 설정 (필요한 경우)
+            if (currentAnimState == PlayerAnimState.AimCrouchIdle)
+            {
+                SetAnimationState(PlayerAnimState.AimCrouchShoot);
+            }
+            else
+            {
+                SetAnimationState(PlayerAnimState.AimShoot);
+            }
+            
+            // 실제 발사 로직
+            FireWeapon();
+            
+            // 마지막 발사 시간 업데이트
+            lastShootTime = Time.time;
+        }
     }
 
     // 실제 무기 발사 로직
     private void FireWeapon()
     {
-        // cameraTransform이 null인 경우 처리
-        if (cameraTransform == null)
+        // 화면 중앙에서 레이캐스트 발사 (에임 UI 위치 기준)
+        Ray ray = Camera.main.ScreenPointToRay(new Vector2(Screen.width/2, Screen.height/2));
+        
+        // 몬스터 레이어만 타격하도록 설정
+        int monsterLayer = LayerMask.NameToLayer("Monster");
+        if (monsterLayer >= 0) // 레이어가 존재하는지 확인
         {
-            if (cameraController != null)
-                cameraTransform = cameraController.transform;
+            int layerMask = (1 << monsterLayer); // 몬스터 레이어만 포함
+            
+            // RaycastHit 변수 선언 추가
+            RaycastHit hit;
+            
+            // 이제 이 layerMask를 레이캐스트에 사용
+            if (Physics.Raycast(ray, out hit, weaponRange, layerMask, QueryTriggerInteraction.Collide))
+            {
+                // 이제 여기에 들어오는 것은 무조건 몬스터입니다
+                Debug.Log($"몬스터 타격: {hit.transform.name}, 거리: {hit.distance}");
+                
+                // 데미지 처리
+                Monster_AI monster = hit.transform.GetComponent<Monster_AI>();
+                if (monster != null)
+                {
+                    monster.TakeDamage(10f);
+                }
+                
+                // 선택적: 히트 이펙트 표시
+                if (impactEffectPrefab != null)
+                {
+                    Instantiate(impactEffectPrefab, hit.point, Quaternion.LookRotation(hit.normal));
+                }
+            }
             else
-                cameraTransform = Camera.main.transform;
-            
-            // 카메라를 찾을 수 없는 경우 처리 종료
-            if (cameraTransform == null)
             {
-                Debug.LogError("카메라를 찾을 수 없습니다!");
-                return;
+                Debug.Log("몬스터에 맞지 않음");
             }
         }
-        
-        // 발사 지점과 방향 설정 (카메라 위치에서 카메라 전방)
-        Vector3 rayOrigin = cameraTransform.position;
-        Vector3 rayDirection = cameraTransform.forward;
-        
-        RaycastHit hit;
-        if (Physics.Raycast(rayOrigin, rayDirection, out hit, weaponRange))
+        else
         {
-            // 레이캐스트 히트 처리
-            Debug.Log("Hit: " + hit.transform.name);
-            
-            // 데미지 처리 로직 (몬스터 등에 데미지 적용)
-            Monster_AI monster = hit.transform.GetComponent<Monster_AI>();
-            if (monster != null)
+            Debug.LogWarning("Monster 레이어가 존재하지 않습니다!");
+        }
+    }
+
+    // Start() 또는 Awake() 메서드에 추가 - 총구 위치 확인
+    private void CheckMuzzlePoint()
+    {
+        if (gunMuzzle == null)
+        {
+            // 총구 위치 찾기 시도 (예시 경로, 실제 모델에 맞게 조정 필요)
+            Transform weaponModel = transform.Find("WeaponModel"); // 적절한 경로로 변경
+            if (weaponModel != null)
             {
-                monster.TakeDamage(10f); // 데미지 값은 조정 필요
+                gunMuzzle = weaponModel.Find("MuzzlePoint");
             }
             
-            // 추후 발사 이펙트 구현
-            // SpawnImpactEffect(hit.point, hit.normal);
+            // 여전히 null이면 임시 위치 생성
+            if (gunMuzzle == null)
+            {
+                Debug.LogWarning("총구 위치를 찾을 수 없어 임시 위치를 생성합니다.");
+                GameObject muzzleObj = new GameObject("TempMuzzlePoint");
+                muzzleObj.transform.SetParent(transform);
+                muzzleObj.transform.localPosition = new Vector3(0.2f, 1.5f, 0.5f); // 앞쪽 오른쪽 위치
+                gunMuzzle = muzzleObj.transform;
+            }
         }
-        
-        // 추후 총구 이펙트 및 사운드 구현
-        // PlayMuzzleEffect();
-        // PlayFireSound();
     }
 
     // 현재 움직임에 기반하여 애니메이션 상태 업데이트

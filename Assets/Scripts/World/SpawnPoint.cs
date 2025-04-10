@@ -131,6 +131,25 @@ public class SpawnPoint : MonoBehaviour
         monster.SetActive(true);
         currentMonsterCount++;
         
+        // 몬스터 레이어 확인 및 설정
+        if (monster.layer == LayerMask.NameToLayer("MonsterBoundary"))
+        {
+            Debug.LogWarning($"몬스터 {monster.name}이 MonsterBoundary 레이어로 잘못 설정되었습니다. 기본 레이어로 변경합니다.");
+            monster.layer = 0; // 기본 레이어
+        }
+        
+        // 콜라이더 확인
+        Collider monsterCollider = monster.GetComponent<Collider>();
+        if (monsterCollider == null)
+        {
+            Debug.LogError($"몬스터 {monster.name}에 콜라이더가 없습니다!");
+        }
+        else if (!monsterCollider.enabled)
+        {
+            Debug.LogWarning($"몬스터 {monster.name}의 콜라이더가 비활성화되어 있습니다. 활성화합니다.");
+            monsterCollider.enabled = true;
+        }
+        
         Debug.Log($"몬스터 스폰: {monster.name} (현재 {currentMonsterCount}/{maxMonsters})");
     }
     
