@@ -1012,4 +1012,36 @@ public class IntegratedPlayerController : MonoBehaviour
         animator.SetFloat(ANIM_PARAM_SPEED, targetSpeed);
         animator.SetFloat(ANIM_PARAM_DIRECTION, direction);
     }
+
+    // 체력을 최대값으로 초기화
+    public void ResetHealth()
+    {
+        currentHP = maxHP;
+        UpdateHealthUI();
+    }
+
+    // 스태미나를 최대값으로 초기화
+    public void ResetStamina()
+    {
+        currentStamina = maxStamina;
+        UpdateStaminaUI();
+    }
+
+    // 체력 UI 업데이트 메서드 (만약 없다면)
+    private void UpdateHealthUI()
+    {
+        if (hpSlider != null)
+        {
+            hpSlider.value = currentHP / maxHP;
+        }
+    }
+
+    // 스태미나 UI 업데이트 메서드 (만약 없다면)
+    private void UpdateStaminaUI()
+    {
+        if (staminaSlider != null)
+        {
+            staminaSlider.value = currentStamina / maxStamina;
+        }
+    }
 }

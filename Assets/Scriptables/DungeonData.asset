@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8aa4bd64e70ecb84e9733e39e84707d6, type: 3}
+  m_Name: DungeonData
+  m_EditorClassIdentifier: 
+  dungeonId: Dungeon_Temple
+  dungeonName: "??? \uC2E0\uC804"
+  description: "\uACE0\uB300\uC5D0 \uC22D\uBC30\uB418\uB358 \uC2E0\uC758 \uC774\uB984\uC740
+    \uC5ED\uC0AC \uC18D\uC5D0 \uBB3B\uD600 \uC78A\uD600\uC84C\uC9C0\uB9CC, \uADF8
+    \uD798\uC740 \uC5EC\uC804\uD788 \uB0A8\uC544\uC788\uC2B5\uB2C8\uB2E4. \uC2E0\uC804
+    \uAE4A\uC219\uD55C \uACF3\uC5D0\uB294 \uC774\uB984 \uC5C6\uB294 \uC2E0\uC758
+    \uC81C\uB2E8\uC774 \uC788\uC73C\uBA70, \uC218\uD638\uC790\uB4E4\uC774 \uCE68\uC785\uC790\uB85C\uBD80\uD130
+    \uADF8\uAC83\uC744 \uC9C0\uD0A4\uACE0 \uC788\uC2B5\uB2C8\uB2E4. \uC81C\uB2E8\uC5D0
+    \uB3C4\uB2EC\uD558\uBA74 \uAC15\uB825\uD55C \uC720\uBB3C\uC774 \uB2F9\uC2E0\uC744
+    \uAE30\uB2E4\uB9AC\uACE0 \uC788\uC744 \uAC83\uC785\uB2C8\uB2E4."
+  sceneName: Dungeon_Temple
+  normalMonsterCount: 5
+  eliteMonsterCount: 2
+  hasBoss: 1
+  guaranteedRewards:
+  - {fileID: 0}
+  possibleRewards:
+  - item: {fileID: 0}
+    dropChance: 0
