@@ -30,9 +30,6 @@ public class DungeonManager : MonoBehaviour
     [Tooltip("던전에서 획득한 골드 (자동 추적)")]
     private int collectedGold = 0;
     
-    [Tooltip("씬 전환 시 사용할 로딩 화면")]
-    [SerializeField] private LoadingScreen loadingScreen;
-    
     // 필드 추가
     private DungeonDifficulty currentDifficulty = DungeonDifficulty.Easy;
     
@@ -71,77 +68,26 @@ public class DungeonManager : MonoBehaviour
         DungeonData data = GetDungeonData(dungeonId);
         if (data == null) return;
         
-        // 현재 위치 저장
+        // 현재 위치 및 던전 정보 저장
         entrancePosition = PlayerManager.Instance.GetPlayerPosition();
-        
-        // 시작 시간 기록
-        dungeonStartTime = Time.time;
-        
-        // 던전 데이터 저장
         currentDungeon = data;
-        
-        // 선택한 난이도 저장
         currentDifficulty = difficulty;
         
-        // 플레이어 상태 초기화 (체력, 스태미나 100%)
+        // 로딩 정보 설정
+        LoadingManager.sceneToLoad = data.sceneName;
+        LoadingManager.dungeonName = data.dungeonName;
+        LoadingManager.difficulty = difficulty;
+        LoadingManager.dungeonId = dungeonId;
+        
+        // 플레이어 상태 초기화
         PlayerManager.Instance.ResetPlayerStatus();
         
-        // 던전 씬 로드
-        StartCoroutine(LoadDungeonScene(data.sceneName));
-    }
-    
-    // 비동기 씬 로드
-    private IEnumerator LoadDungeonScene(string sceneName)
-    {
-        // 로딩 UI 표시
-        loadingScreen.Show(currentDungeon.dungeonName);
-        
-        // 수집 아이템 초기화
-        collectedItems.Clear();
-        collectedGold = 0;
-        
-        // 씬 비동기 로드
-        AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(sceneName);
-        asyncLoad.allowSceneActivation = false;
-        
-        float timeElapsed = 0;
-        while (asyncLoad.progress < 0.9f)
-        {
-            timeElapsed += Time.deltaTime;
-            // 로딩 진행률 업데이트 (실제 진행률과 시각적 효과 혼합)
-            float visualProgress = Mathf.Clamp01(asyncLoad.progress / 0.9f);
-            loadingScreen.UpdateProgress(visualProgress);
-            yield return null;
-        }
-        
-        // 로딩이 너무 빨리 끝나는 경우 최소 1초는 로딩 화면 표시
-        if (timeElapsed < 1f)
-        {
-            yield return new WaitForSeconds(1f - timeElapsed);
-        }
-        
-        // 로딩 완료
-        loadingScreen.UpdateProgress(1.0f);
-        yield return new WaitForSeconds(0.5f);
-        
-        // 씬 활성화
-        asyncLoad.allowSceneActivation = true;
-        
-        // 씬 전환 완료 대기
-        while (!asyncLoad.isDone)
-        {
-            yield return null;
-        }
-        
-        // 던전 초기화
-        InitializeDungeon();
-        
-        // 로딩 UI 숨기기
-        loadingScreen.Hide();
+        // 로딩 씬으로 전환
+        UnityEngine.SceneManagement.SceneManager.LoadScene("Loading_Temple");
     }
     
     // 던전 초기화
-    private void InitializeDungeon()
+    public void InitializeDungeon()
     {
         // 초기 리스폰 지점 설정
         GameObject startPoint = GameObject.FindGameObjectWithTag("DungeonStart");
@@ -153,6 +99,9 @@ public class DungeonManager : MonoBehaviour
         
         // 던전 시작 메시지 - 선택된 난이도 전달
         DungeonUIManager.Instance.ShowDungeonStartMessage(currentDungeon.dungeonName, currentDifficulty);
+
+        // 시작 시간 기록 (추가)
+        dungeonStartTime = Time.time;
     }
     
     // 리스폰 지점 설정
@@ -212,43 +161,12 @@ public class DungeonManager : MonoBehaviour
     // 던전 퇴장
     public void ExitDungeon()
     {
-        // 오픈 월드로 이동
-        StartCoroutine(ReturnToOpenWorld());
-    }
-    
-    // 오픈 월드로 복귀
-    private IEnumerator ReturnToOpenWorld()
-    {
-        // 로딩 UI 표시
-        loadingScreen.Show("오픈 월드로 복귀");
+        // 새로운 로딩 시스템 사용
+        LoadingManager.sceneToLoad = "OpenWorld";
+        LoadingManager.dungeonName = "오픈 월드로 복귀";
         
-        // 메인 씬 로드
-        AsyncOperation asyncLoad = SceneManager.LoadSceneAsync("OpenWorld");
-        asyncLoad.allowSceneActivation = false;
-        
-        while (asyncLoad.progress < 0.9f)
-        {
-            loadingScreen.UpdateProgress(asyncLoad.progress / 0.9f);
-            yield return null;
-        }
-        
-        // 로딩 완료
-        loadingScreen.UpdateProgress(1.0f);
-        yield return new WaitForSeconds(0.5f);
-        
-        asyncLoad.allowSceneActivation = true;
-        
-        // 씬 전환 완료 대기
-        while (!asyncLoad.isDone)
-        {
-            yield return null;
-        }
-        
-        // 플레이어 위치 복원
-        PlayerManager.Instance.TeleportPlayer(entrancePosition);
-        
-        // 로딩 UI 숨기기
-        loadingScreen.Hide();
+        // 로딩 씬으로 전환
+        SceneManager.LoadScene("LoadingScene");
     }
     
     // 보상 지급
@@ -273,5 +191,11 @@ public class DungeonManager : MonoBehaviour
                 }
             }
         }
+    }
+    
+    // 던전 입구 위치 가져오기
+    public Vector3 GetEntrancePosition()
+    {
+        return entrancePosition;
     }
 } 

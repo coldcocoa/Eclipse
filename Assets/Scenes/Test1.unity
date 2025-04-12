@@ -1924,6 +1924,7 @@ GameObject:
   - component: {fileID: 499605956}
   - component: {fileID: 499605955}
   - component: {fileID: 499605957}
+  - component: {fileID: 499605958}
   m_Layer: 3
   m_Name: Player
   m_TagString: Player
@@ -2018,7 +2019,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 2
-  sprintSpeed: 7
+  sprintSpeed: 40
   crouchSpeed: 2
   crouchJogSpeed: 4
   gravityValue: -9.81
@@ -2122,6 +2123,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   inventorySize: 15
   slots: []
+--- !u!114 &499605958
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 499605947}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a2aff75f09aaa243a24f97aaba78588, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerController: {fileID: 499605952}
 --- !u!1 &504744285
 GameObject:
   m_ObjectHideFlags: 0
@@ -6396,7 +6410,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   availableDungeons:
   - {fileID: 11400000, guid: 9f99e28a09fc2e6489fb60b0901131d2, type: 2}
-  loadingScreen: {fileID: 0}
 --- !u!4 &1759648703
 Transform:
   m_ObjectHideFlags: 0
@@ -7391,7 +7404,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2080318256}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 164546970}
+        m_TargetAssemblyTypeName: DungeonUIManager, Assembly-CSharp
+        m_MethodName: EnterDungeonWithSelectedDifficulty
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &2080318256
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7597,7 +7622,7 @@ SceneRoots:
   - {fileID: 2024359848}
   - {fileID: 1977143940}
   - {fileID: 1055670129}
-  - {fileID: 759314467}
   - {fileID: 1222755314}
   - {fileID: 164546971}
   - {fileID: 1759648703}
+  - {fileID: 759314467}

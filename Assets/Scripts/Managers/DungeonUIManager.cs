@@ -163,7 +163,7 @@ public class DungeonUIManager : MonoBehaviour
     }
     
     // 선택된 난이도로 던전 입장
-    private void EnterDungeonWithSelectedDifficulty()
+    public void EnterDungeonWithSelectedDifficulty()
     {
         if (currentDungeonData != null)
         {
