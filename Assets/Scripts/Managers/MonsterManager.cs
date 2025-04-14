@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class MonsterManager : MonoBehaviour
 {
@@ -19,11 +20,10 @@ public class MonsterManager : MonoBehaviour
     
     private void Awake()
     {
-        // 싱글톤 패턴 구현
+        // 싱글톤 패턴은 유지하되 씬별로 존재
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
         }
         else
         {
@@ -77,6 +77,21 @@ public class MonsterManager : MonoBehaviour
     }
     
     /// <summary>
+    /// 몬스터를 풀로 반환합니다.
+    /// </summary>
+    /// <param name="monster">반환할 몬스터 오브젝트</param>
+    public void ReturnMonsterToPool(GameObject monster)
+    {
+        if (monster != null)
+        {
+            // 몬스터 상태 초기화
+            monster.transform.SetParent(poolContainer);
+            monster.transform.position = Vector3.zero;
+            monster.SetActive(false);
+        }
+    }
+    
+    /// <summary>
     /// 풀에서 비활성화된 몬스터를 가져옵니다.
     /// </summary>
     /// <param name="type">몬스터 타입</param>
@@ -90,6 +105,26 @@ public class MonsterManager : MonoBehaviour
         {
             if (!monster.activeInHierarchy)
             {
+                // NavMeshAgent 재활성화
+                NavMeshAgent agent = monster.GetComponent<NavMeshAgent>();
+                if (agent != null)
+                {
+                    agent.enabled = true;
+                }
+                
+                // 몬스터 AI 초기화 (Monster_AI와 Skeleton_AI 모두 확인)
+                Monster_AI monsterAI = monster.GetComponent<Monster_AI>();
+                if (monsterAI != null)
+                {
+                    monsterAI.ResetMonster();
+                }
+                
+                Skeleton_AI skeletonAI = monster.GetComponent<Skeleton_AI>();
+                if (skeletonAI != null)
+                {
+                    skeletonAI.ResetSkeleton();
+                }
+                
                 return monster;
             }
         }
@@ -97,21 +132,6 @@ public class MonsterManager : MonoBehaviour
         // 풀에 여유가 없는 경우
         Debug.LogWarning($"몬스터 풀({type})이 부족합니다! 확장 필요.");
         return null;
-    }
-    
-    /// <summary>
-    /// 몬스터를 풀로 반환합니다.
-    /// </summary>
-    /// <param name="monster">반환할 몬스터 오브젝트</param>
-    public void ReturnMonsterToPool(GameObject monster)
-    {
-        if (monster != null)
-        {
-            // 몬스터 상태 초기화
-            monster.transform.SetParent(poolContainer);
-            monster.transform.position = Vector3.zero;
-            monster.SetActive(false);
-        }
     }
     
     // 몬스터 타입에 따른 풀 반환

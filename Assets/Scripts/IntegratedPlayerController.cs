@@ -134,6 +134,10 @@ public class IntegratedPlayerController : MonoBehaviour
     [SerializeField] private GameObject bulletTrailPrefab; // 총알 궤적 프리팹 (선택적)
     [SerializeField] private GameObject impactEffectPrefab; // 임팩트 효과 프리팹 (선택적)
 
+    // 무기 컨트롤러 참조 추가
+    [Header("무기 시스템")]
+    [SerializeField] private WeaponController weaponController;
+
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
@@ -195,6 +199,26 @@ public class IntegratedPlayerController : MonoBehaviour
 
         // 애니메이션 파라미터 업데이트 (매 프레임)
         UpdateAnimationParameters();
+
+        // 발사 입력 처리
+        if (Input.GetMouseButtonDown(0))
+        {
+            if (weaponController != null && weaponController.Fire())
+            {
+                // 발사 성공 시 애니메이션
+                animator.SetTrigger("Fire");
+            }
+        }
+        
+        // 장전 입력 처리
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            if (weaponController != null && weaponController.StartReload())
+            {
+                // 장전 시작 시 애니메이션
+                animator.SetTrigger("Reload");
+            }
+        }
     }
 
     // =========================================================

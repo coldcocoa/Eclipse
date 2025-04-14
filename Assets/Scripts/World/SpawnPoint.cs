@@ -39,6 +39,24 @@ public class SpawnPoint : MonoBehaviour
         StartCoroutine(InitialSpawn());
     }
     
+    private void OnEnable() 
+    {
+        // 씬이 로드될 때마다 최신 MonsterManager 인스턴스를 사용
+        // (참조가 끊어졌을 수 있음)
+        StartCoroutine(InitializeOnNextFrame());
+    }
+    
+    private IEnumerator InitializeOnNextFrame()
+    {
+        yield return null; // 한 프레임 기다림 (MonsterManager가 Awake할 시간 필요)
+        
+        // 현재 씬의 MonsterManager 참조 획득
+        if (MonsterManager.Instance == null)
+        {
+            Debug.LogError("현재 씬에 MonsterManager가 없습니다!");
+        }
+    }
+    
     // 초기 몬스터 생성 (약간의 시간차를 두고 생성하여 동시 스폰으로 인한 부하 방지)
     private IEnumerator InitialSpawn()
     {
@@ -100,11 +118,11 @@ public class SpawnPoint : MonoBehaviour
             return;
         }
         
-        // 스폰 위치 설정 (약간의 랜덤성 추가)
+        // 스폰 위치 설정 (약간의 랜덤성 추가 + 높은 위치에서 시작)
         Vector3 spawnPosition = transform.position;
         spawnPosition += new Vector3(
             Random.Range(-2f, 2f),
-            0f,
+            3f, // 지상보다 3미터 높은 곳에서 시작
             Random.Range(-2f, 2f)
         );
         
@@ -127,30 +145,65 @@ public class SpawnPoint : MonoBehaviour
             Debug.LogError("Monster_AI 컴포넌트를 찾을 수 없습니다.");
         }
         
+        // 콜라이더 비활성화 (착지 전까지)
+        Collider monsterCollider = monster.GetComponent<Collider>();
+        if (monsterCollider != null)
+        {
+            monsterCollider.enabled = false;
+        }
+        
         // 몬스터 활성화
         monster.SetActive(true);
         currentMonsterCount++;
         
-        // 몬스터 레이어 확인 및 설정
-        if (monster.layer == LayerMask.NameToLayer("MonsterBoundary"))
-        {
-            Debug.LogWarning($"몬스터 {monster.name}이 MonsterBoundary 레이어로 잘못 설정되었습니다. 기본 레이어로 변경합니다.");
-            monster.layer = 0; // 기본 레이어
-        }
-        
-        // 콜라이더 확인
-        Collider monsterCollider = monster.GetComponent<Collider>();
-        if (monsterCollider == null)
-        {
-            Debug.LogError($"몬스터 {monster.name}에 콜라이더가 없습니다!");
-        }
-        else if (!monsterCollider.enabled)
-        {
-            Debug.LogWarning($"몬스터 {monster.name}의 콜라이더가 비활성화되어 있습니다. 활성화합니다.");
-            monsterCollider.enabled = true;
-        }
+        // 부드러운 하강 효과 시작
+        StartCoroutine(SmoothDescentEffect(monster, monsterCollider));
         
         Debug.Log($"몬스터 스폰: {monster.name} (현재 {currentMonsterCount}/{maxMonsters})");
+    }
+    
+    // 부드러운 하강 효과 코루틴
+    private IEnumerator SmoothDescentEffect(GameObject monster, Collider monsterCollider)
+    {
+        if (monster == null) yield break;
+        
+        Vector3 startPosition = monster.transform.position;
+        Vector3 targetPosition = new Vector3(
+            startPosition.x,
+            transform.position.y, // 스폰 포인트와 같은 높이
+            startPosition.z
+        );
+        
+        float duration = 1.5f; // 하강에 걸리는 시간 (초)
+        float elapsedTime = 0f;
+        
+        while (elapsedTime < duration)
+        {
+            if (monster == null) yield break; // 도중에 파괴된 경우
+            
+            elapsedTime += Time.deltaTime;
+            float progress = elapsedTime / duration;
+            
+            // 부드러운 감속 효과 (Ease Out)
+            float smoothProgress = 1f - Mathf.Pow(1f - progress, 3f);
+            
+            // 위치 업데이트
+            monster.transform.position = Vector3.Lerp(startPosition, targetPosition, smoothProgress);
+            
+            yield return null;
+        }
+        
+        // 최종 위치 설정
+        if (monster != null)
+        {
+            monster.transform.position = targetPosition;
+            
+            // 착지 후 콜라이더 다시 활성화
+            if (monsterCollider != null)
+            {
+                monsterCollider.enabled = true;
+            }
+        }
     }
     
     // 몬스터 사망 처리 (Monster_AI에서 호출)

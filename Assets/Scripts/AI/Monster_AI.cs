@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.AI; // NavMeshAgent 사용을 위해 추가
 using System.Collections.Generic; // List 사용
 using System;
+using System.Collections;
 
 [RequireComponent(typeof(NavMeshAgent))] // NavMeshAgent 컴포넌트 강제
 [RequireComponent(typeof(Animator))]    // Animator 컴포넌트 강제
@@ -287,15 +288,6 @@ public class Monster_AI : MonoBehaviour
                 ProcessDeathDrops();
                 // ------------------------
 
-                Destroy(gameObject, 5f); // 5초 후 오브젝트 제거 (Die 애니메이션 시간 고려)
-
-                // --- 체력 바 비활성화 ---
-                if (healthBarInstance != null)
-                {
-                    Destroy(healthBarInstance.gameObject);
-                }
-                // ------------------------
-
                 // 이벤트 발생
                 OnMonsterDeath?.Invoke();
 
@@ -304,6 +296,9 @@ public class Monster_AI : MonoBehaviour
                 {
                     parentSpawnPoint.OnMonsterDeath(gameObject);
                 }
+
+                // Destroy 제거하고 코루틴으로 대체
+                StartCoroutine(DelayedDeactivation(3f));
 
                 break;
         }
@@ -498,5 +493,56 @@ public class Monster_AI : MonoBehaviour
                 healthBarInstance.Setup(this);
             }
         }
+    }
+
+    private void Die()
+    {
+        if (isDead) return;
+        
+        isDead = true;
+        
+        // 상태 전환
+        currentState = MonsterState.Dead;
+        
+        // 사망 애니메이션
+        animator.SetTrigger("Die");
+        
+        // 네비게이션 비활성화
+        agent.enabled = false;
+        
+        // 콜라이더 비활성화
+        Collider[] colliders = GetComponents<Collider>();
+        foreach (Collider col in colliders)
+        {
+            col.enabled = false;
+        }
+        
+        // 체력바 파괴
+        if (healthBarInstance != null)
+        {
+            Destroy(healthBarInstance.gameObject);
+        }
+        
+        // 몬스터 사망 이벤트 발생
+        OnMonsterDeath?.Invoke();
+        
+        // 스폰 포인트에 알림
+        if (parentSpawnPoint != null)
+        {
+            parentSpawnPoint.OnMonsterDeath(gameObject);
+        }
+        
+        // Destroy 제거하고 코루틴으로 대체
+        StartCoroutine(DelayedDeactivation(3f));
+    }
+
+    // 지연 비활성화 코루틴 추가
+    private IEnumerator DelayedDeactivation(float delay)
+    {
+        // 지정된 시간 대기
+        yield return new WaitForSeconds(delay);
+        
+        // 이미 풀에 반환되었을 수 있으므로 추가 체크는 하지 않음
+        // 몬스터 매니저와 스폰 포인트가 이미 처리함
     }
 }

@@ -312,8 +312,18 @@ public class Skeleton_AI : MonoBehaviour
             parentSpawnPoint.OnMonsterDeath(gameObject);
         }
         
-        // 일정 시간 후 오브젝트 제거 (풀링 시스템 사용 시 비활성화로 변경)
-        Destroy(gameObject, 3f);
+        // Destroy 대신 코루틴으로 지연 후 비활성화
+        StartCoroutine(DelayedDeactivation(3f));
+    }
+    
+    // 지연 후 비활성화 코루틴 추가
+    private IEnumerator DelayedDeactivation(float delay)
+    {
+        // 지정된 시간 대기
+        yield return new WaitForSeconds(delay);
+        
+        // 이미 풀에 반환되었을 수 있으므로 추가 체크는 하지 않음
+        // 몬스터 매니저와 스폰 포인트가 이미 처리함
     }
     
     private void UpdateHealthBar()
