@@ -15,6 +15,8 @@ public class InventorySystem : MonoBehaviour
     // 싱글톤 또는 다른 방식으로 접근 가능하게 만들 수 있음
     public static InventorySystem Instance { get; private set; }
 
+    private int gold = 0;
+
     private void Awake()
     {
         if (Instance == null)
@@ -149,5 +151,62 @@ public class InventorySystem : MonoBehaviour
                      .ThenBy(slot => slot.itemData?.itemName) // 2. 아이템 이름순 (null 체크)
                      .ToList();
         OnInventoryChanged?.Invoke(); // 인벤토리 변경 알림
+    }
+
+    /// <summary>
+    /// 골드를 추가합니다.
+    /// </summary>
+    /// <param name="amount">추가할 골드 양</param>
+    public void AddGold(int amount)
+    {
+        if (amount <= 0) return;
+        
+        gold += amount;
+        
+        // 골드 UI 업데이트 (주석 해제)
+        if (UIManager.Instance != null)
+        {
+            // UpdateGoldDisplay 대신 UpdateGoldUI 호출
+            UIManager.Instance.UpdateGoldUI(gold);
+        }
+        
+        Debug.Log($"골드 획득: {amount}G (현재 총 골드: {gold}G)");
+    }
+
+    /// <summary>
+    /// 현재 보유한 골드 양을 반환합니다.
+    /// </summary>
+    public int GetGold()
+    {
+        return gold;
+    }
+
+    /// <summary>
+    /// 골드를 사용합니다.
+    /// </summary>
+    /// <param name="amount">사용할 골드 양</param>
+    /// <returns>사용 성공 여부</returns>
+    public bool UseGold(int amount)
+    {
+        if (amount <= 0) return false;
+        
+        // 가지고 있는 골드가 충분한지 확인
+        if (gold < amount)
+        {
+            Debug.Log($"골드가 부족합니다. (필요: {amount}G, 보유: {gold}G)");
+            return false;
+        }
+        
+        gold -= amount;
+        
+        // 골드 UI 업데이트 (주석 해제)
+        if (UIManager.Instance != null)
+        {
+            // UpdateGoldDisplay 대신 UpdateGoldUI 호출
+            UIManager.Instance.UpdateGoldUI(gold);
+        }
+        
+        Debug.Log($"골드 사용: {amount}G (남은 골드: {gold}G)");
+        return true;
     }
 } 

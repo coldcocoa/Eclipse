@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 8aeeca0b2c2b19a4db4983b729fec3e2
+timeCreated: 1429729422
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 35463
+  packageName: RPG - Skeleton
+  packageVersion: 1.1
+  assetPath: Assets/SimpleSkeletonFree/material/skeleton_MAT.mat
+  uploadId: 208026

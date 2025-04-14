@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28e8cb5c8d502394eb7e738229a303ce, type: 3}
+  m_Name: MonsterData_Reaper
+  m_EditorClassIdentifier: 
+  monsterDataId: Reaper
+  monsterName: Reaper
+  monsterType: 3
+  minGold: 400
+  maxGold: 600
+  dropItems:
+  - item: {fileID: 11400000, guid: 28c109fecd3f4794fa8a339eeba0eb25, type: 2}
+    dropChance: 20
+    minAmount: 2
+    maxAmount: 6
+    bossOnly: 0

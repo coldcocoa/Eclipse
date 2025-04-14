@@ -43,6 +43,7 @@ GameObject:
   - component: {fileID: 4593762459194247112}
   - component: {fileID: 1657762345597568734}
   - component: {fileID: 5671560840534266512}
+  - component: {fileID: 8419667877402533697}
   - component: {fileID: 2154380087902399058}
   - component: {fileID: 8051341767839946971}
   m_Layer: 7
@@ -132,15 +133,28 @@ MonoBehaviour:
   attackCooldown: 2
   patrolCycleTime: 5
   searchDuration: 3
-  dropTable: {fileID: 11400000, guid: f0531d94d5843ed4097ef9ec199d4c5d, type: 2}
-  lootableObjectPrefab: {fileID: 1556632009200714274, guid: 05e9acafc63eb2d4fb11f7f9bc5d6f5c,
-    type: 3}
   healthBarPrefab: {fileID: 7404636742515577922, guid: 34d47edaeb6e2434692f04f796269c01,
     type: 3}
   damageNumberPrefab: {fileID: 7447602737212632213, guid: 93516d0f8e7564841af4ea6b70bfb9f8,
     type: 3}
   uiSpawnPoint: {fileID: 9110578724399926287}
   currentHp: 0
+--- !u!114 &8419667877402533697
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5680161158443578165}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0c04d7df93473f41a19f2cbd79275bd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  monsterData: {fileID: 11400000, guid: fe0f5bcda72e0db40ad03a8343a25c0c, type: 2}
+  lootPrefab: {fileID: 1556632009200714274, guid: 05e9acafc63eb2d4fb11f7f9bc5d6f5c,
+    type: 3}
+  goldEffectPrefab: {fileID: 0}
 --- !u!54 &2154380087902399058
 Rigidbody:
   m_ObjectHideFlags: 0

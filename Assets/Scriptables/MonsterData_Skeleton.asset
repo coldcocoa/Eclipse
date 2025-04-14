@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28e8cb5c8d502394eb7e738229a303ce, type: 3}
+  m_Name: MonsterData_Skeleton
+  m_EditorClassIdentifier: 
+  monsterDataId: Skeleton
+  monsterName: Skeleton
+  monsterType: 1
+  minGold: 50
+  maxGold: 30
+  dropItems:
+  - item: {fileID: 11400000, guid: 64146ec9b0dc0e94fac1d2960ed17918, type: 2}
+    dropChance: 40
+    minAmount: 2
+    maxAmount: 6
+    bossOnly: 0

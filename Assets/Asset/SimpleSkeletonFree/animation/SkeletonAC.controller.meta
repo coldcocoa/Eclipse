@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 6e092ad3d6b50a14bac692ea833c646a
+timeCreated: 1508858546
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 35463
+  packageName: RPG - Skeleton
+  packageVersion: 1.1
+  assetPath: Assets/SimpleSkeletonFree/animation/SkeletonAC.controller
+  uploadId: 208026

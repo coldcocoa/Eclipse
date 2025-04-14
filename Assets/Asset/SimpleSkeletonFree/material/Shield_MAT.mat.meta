@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: ff5d34f25565f494fbed3a83579eb4e4
+timeCreated: 1429727060
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 35463
+  packageName: RPG - Skeleton
+  packageVersion: 1.1
+  assetPath: Assets/SimpleSkeletonFree/material/Shield_MAT.mat
+  uploadId: 208026

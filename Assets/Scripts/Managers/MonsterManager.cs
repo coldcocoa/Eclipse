@@ -7,6 +7,7 @@ public class MonsterManager : MonoBehaviour
     
     [Header("몬스터 프리팹")]
     [SerializeField] private GameObject slimePrefab; // 슬라임 프리팹
+    [SerializeField] private GameObject skeletonPrefab; // 스켈레톤 프리팹 추가
     
     [Header("풀링 설정")]
     [SerializeField] private int poolSize = 20; // 풀 크기
@@ -14,6 +15,7 @@ public class MonsterManager : MonoBehaviour
     
     // 몬스터 타입별 풀
     private List<GameObject> slimePool = new List<GameObject>();
+    private List<GameObject> skeletonPool = new List<GameObject>(); // 스켈레톤 풀 추가
     
     private void Awake()
     {
@@ -56,7 +58,22 @@ public class MonsterManager : MonoBehaviour
             slimePool.Add(monster);
         }
         
-        Debug.Log($"몬스터 풀 초기화 완료: 슬라임 {poolSize}개");
+        // 스켈레톤 풀 초기화
+        for (int i = 0; i < poolSize; i++)
+        {
+            if (skeletonPrefab == null)
+            {
+                Debug.LogError("스켈레톤 프리팹이 할당되지 않았습니다!");
+                return;
+            }
+            
+            GameObject monster = Instantiate(skeletonPrefab, Vector3.zero, Quaternion.identity, poolContainer);
+            monster.name = $"Skeleton_{i}";
+            monster.SetActive(false);
+            skeletonPool.Add(monster);
+        }
+        
+        Debug.Log($"몬스터 풀 초기화 완료: 슬라임 {poolSize}개, 스켈레톤 {poolSize}개");
     }
     
     /// <summary>
@@ -104,9 +121,11 @@ public class MonsterManager : MonoBehaviour
         {
             case MonsterType.Slime:
                 return slimePool;
+            case MonsterType.Skeleton:
+                return skeletonPool;
             default:
                 Debug.LogError($"지원하지 않는 몬스터 타입: {type}");
-                return slimePool; // 기본값으로 슬라임 반환
+                return slimePool;
         }
     }
 }
@@ -115,5 +134,7 @@ public class MonsterManager : MonoBehaviour
 public enum MonsterType
 {
     Slime,
-    // 추후 추가될 몬스터 타입들
+    Skeleton,
+    Reaper,  // 사신 몬스터
+    Boss     // 일반적인 보스 타입
 } 

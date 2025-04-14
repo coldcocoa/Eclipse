@@ -1,6 +1,7 @@
- using UnityEngine;
+using UnityEngine;
 using UnityEngine.AI; // NavMeshAgent 사용을 위해 추가
 using System.Collections.Generic; // List 사용
+using System;
 
 [RequireComponent(typeof(NavMeshAgent))] // NavMeshAgent 컴포넌트 강제
 [RequireComponent(typeof(Animator))]    // Animator 컴포넌트 강제
@@ -17,10 +18,6 @@ public class Monster_AI : MonoBehaviour
     [Header("탐색 및 이동 설정")]
     [SerializeField] private float patrolCycleTime = 5f; // 순찰(이동+탐색) 주기
     [SerializeField] private float searchDuration = 3f;  // 탐색 지속 시간
-
-    [Header("드랍 설정")] // 드랍 테이블 필드 추가
-    [SerializeField] private DropTable dropTable;
-    [SerializeField] private GameObject lootableObjectPrefab; // 루팅 가능 오브젝트 프리팹
 
     // --- UI 관련 필드 추가 ---
     [Header("UI 설정")]
@@ -64,6 +61,8 @@ public class Monster_AI : MonoBehaviour
     private SpawnPoint parentSpawnPoint; // 소환된 스폰 포인트 참조
     private float hpMultiplier = 1.0f;
     private float damageMultiplier = 1.0f;
+
+    public event Action OnMonsterDeath;
 
     void Awake()
     {
@@ -297,6 +296,9 @@ public class Monster_AI : MonoBehaviour
                 }
                 // ------------------------
 
+                // 이벤트 발생
+                OnMonsterDeath?.Invoke();
+
                 // SpawnPoint에 사망 알림 (풀링 시스템용)
                 if (parentSpawnPoint != null)
                 {
@@ -310,52 +312,11 @@ public class Monster_AI : MonoBehaviour
     // --- 사망 시 드랍 처리 함수 추가 ---
     private void ProcessDeathDrops()
     {
-        if (dropTable == null)
+        // 직접 MonsterDrop 호출
+        MonsterDrop drop = GetComponent<MonsterDrop>();
+        if (drop != null)
         {
-            Debug.LogError($"{gameObject.name}: DropTable이 설정되지 않았습니다.");
-            return;
-        }
-
-        // 1. 드랍 테이블에서 골드 및 아이템 목록 계산
-        dropTable.GetDrops(out int goldAmount, out List<KeyValuePair<ItemData, int>> droppedItems);
-
-        // 2. 골드 지급 (PlayerWallet 참조 필요)
-        PlayerWallet playerWallet = PlayerWallet.Instance; // 싱글톤 사용 예시
-        if (playerWallet != null && goldAmount > 0)
-        {
-            playerWallet.AddGold(goldAmount);
-            Debug.Log($"{gameObject.name}: 골드 {goldAmount} 드랍 (즉시 지급)");
-        }
-
-        // 3. 아이템 드랍 (LootableObject 생성)
-        if (droppedItems != null && droppedItems.Count > 0)
-        {
-            if (lootableObjectPrefab != null)
-            {
-                // LootableObject 생성 위치 (몬스터 위치 또는 약간 위)
-                Vector3 spawnPosition = transform.position + Vector3.up * 0.5f;
-                GameObject lootGO = Instantiate(lootableObjectPrefab, spawnPosition, Quaternion.identity);
-                LootableObject lootable = lootGO.GetComponent<LootableObject>();
-
-                if (lootable != null)
-                {
-                    lootable.Initialize(droppedItems); // 계산된 아이템 목록 전달
-                    Debug.Log($"{gameObject.name}: {droppedItems.Count} 종류의 아이템을 포함한 LootableObject 생성");
-                }
-                else
-                {
-                    Debug.LogError($"LootableObject 프리팹에 LootableObject 스크립트가 없습니다: {lootableObjectPrefab.name}");
-                    Destroy(lootGO); // 스크립트 없으면 생성된 오브젝트 제거
-                }
-            }
-            else
-            {
-                Debug.LogWarning($"{gameObject.name}: LootableObject 프리팹이 설정되지 않았습니다.");
-            }
-        }
-        else
-        {
-            Debug.Log($"{gameObject.name}: 드랍할 아이템이 없습니다.");
+            drop.HandleMonsterDeath();
         }
     }
 

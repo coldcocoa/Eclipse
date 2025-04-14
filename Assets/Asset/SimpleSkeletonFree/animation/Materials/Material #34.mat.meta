@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 6949ea2d13e839b45bc75c68304c630b
+timeCreated: 1508860645
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 35463
+  packageName: RPG - Skeleton
+  packageVersion: 1.1
+  assetPath: Assets/SimpleSkeletonFree/animation/Materials/Material #34.mat
+  uploadId: 208026

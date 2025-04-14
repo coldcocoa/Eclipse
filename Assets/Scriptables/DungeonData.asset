@@ -30,4 +30,4 @@ MonoBehaviour:
   - {fileID: 0}
   possibleRewards:
   - item: {fileID: 0}
-    dropChance: 0
+    dropChance: 10

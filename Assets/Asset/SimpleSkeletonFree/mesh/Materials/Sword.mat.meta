@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: dae22f8b5a5734e49a6feb3d884ac0c3
+timeCreated: 1429730639
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 35463
+  packageName: RPG - Skeleton
+  packageVersion: 1.1
+  assetPath: Assets/SimpleSkeletonFree/mesh/Materials/Sword.mat
+  uploadId: 208026

@@ -267,6 +267,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   healthSlider: {fileID: 1260705310847562047}
   yOffset: 2
+  healthChangeDuration: 0.3
 --- !u!1 &7510863541351094099
 GameObject:
   m_ObjectHideFlags: 0
