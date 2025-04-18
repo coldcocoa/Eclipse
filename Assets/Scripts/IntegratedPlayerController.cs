@@ -852,49 +852,25 @@ public class IntegratedPlayerController : MonoBehaviour
         // 사격 딜레이 확인
         if (Time.time < nextFireTime) return;
 
-        // 다음 사격 시간 업데이트
-        nextFireTime = Time.time + fireRate;
-
-        // 슈팅 애니메이션 재생 (트리거 초기화)
-        ResetAnimationTriggers();
-        animator.SetTrigger(ANIM_PARAM_TRIGGER_SHOOT);
-
-        // 사격 후 처리
-        isShooting = true;
-        lastShootTime = Time.time;
-
-        // 카메라 중앙에서 레이캐스팅
-        Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
-        RaycastHit hit;
-        bool didHit = Physics.Raycast(ray, out hit, weaponRange);
-        Vector3 targetPoint = didHit ? hit.point : ray.GetPoint(weaponRange);
-
-        // 무기 컨트롤러를 통해 발사 처리
+        // 무기 컨트롤러 참조 획득
         WeaponController weaponController = GetComponentInChildren<WeaponController>();
-        if (weaponController != null)
+        if (weaponController == null) return;
+
+        // 무기 컨트롤러에 발사 명령
+        bool shotFired = weaponController.TryShoot(Camera.main, weaponRange);
+        
+        if (shotFired)
         {
-            string hitTag = didHit ? hit.collider.tag : "";
-            string hitMaterial = didHit ? hit.collider.GetComponentInChildren<Renderer>()?.material.name ?? "Default" : "Default";
-
-            // Fire 호출
-            if (weaponController.Fire(targetPoint, didHit ? hit.normal : -ray.direction, didHit, hitTag, hitMaterial))
-            {
-                // 몬스터에 맞았는지 확인
-                Monster_AI monsterAI = hit.collider?.GetComponentInParent<Monster_AI>();
-                if (monsterAI != null)
-                {
-                    hitTag = "Monster";
-                    monsterAI.TakeDamage(30);
-                }
-
-                // 스켈레톤에 맞았는지 확인
-                Skeleton_AI skeletonAI = hit.collider?.GetComponentInParent<Skeleton_AI>();
-                if (skeletonAI != null)
-                {
-                    hitTag = "Monster";
-                    skeletonAI.TakeDamage(30, hit.point);
-                }
-            }
+            // 다음 사격 시간 업데이트
+            nextFireTime = Time.time + fireRate;
+            
+            // 슈팅 애니메이션 재생 (트리거 초기화)
+            ResetAnimationTriggers();
+            animator.SetTrigger(ANIM_PARAM_TRIGGER_SHOOT);
+            
+            // 사격 후 처리
+            isShooting = true;
+            lastShootTime = Time.time;
         }
     }
 
