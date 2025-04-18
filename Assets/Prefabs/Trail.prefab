@@ -9,7 +9,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5456323367724114701}
-  - component: {fileID: -5753067454582941757}
   m_Layer: 0
   m_Name: Trail
   m_TagString: Untagged
@@ -29,17 +28,102 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 5258041085361244374}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!96 &-5753067454582941757
+--- !u!1001 &3788024283993307402
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 5456323367724114701}
+    m_Modifications:
+    - target: {fileID: 5627696518775099638, guid: 543d521d2176ace4aba4667ddca92d97,
+        type: 3}
+      propertyPath: m_Name
+      value: VFX_Zap_06_White
+      objectReference: {fileID: 0}
+    - target: {fileID: 8964859838461161948, guid: 543d521d2176ace4aba4667ddca92d97,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 6.89
+      objectReference: {fileID: 0}
+    - target: {fileID: 8964859838461161948, guid: 543d521d2176ace4aba4667ddca92d97,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8964859838461161948, guid: 543d521d2176ace4aba4667ddca92d97,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8964859838461161948, guid: 543d521d2176ace4aba4667ddca92d97,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8964859838461161948, guid: 543d521d2176ace4aba4667ddca92d97,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8964859838461161948, guid: 543d521d2176ace4aba4667ddca92d97,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8964859838461161948, guid: 543d521d2176ace4aba4667ddca92d97,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8964859838461161948, guid: 543d521d2176ace4aba4667ddca92d97,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8964859838461161948, guid: 543d521d2176ace4aba4667ddca92d97,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8964859838461161948, guid: 543d521d2176ace4aba4667ddca92d97,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5627696518775099638, guid: 543d521d2176ace4aba4667ddca92d97,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8306398954779109340}
+  m_SourcePrefab: {fileID: 100100000, guid: 543d521d2176ace4aba4667ddca92d97, type: 3}
+--- !u!4 &5258041085361244374 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8964859838461161948, guid: 543d521d2176ace4aba4667ddca92d97,
+    type: 3}
+  m_PrefabInstance: {fileID: 3788024283993307402}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &8829408426237078012 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5627696518775099638, guid: 543d521d2176ace4aba4667ddca92d97,
+    type: 3}
+  m_PrefabInstance: {fileID: 3788024283993307402}
+  m_PrefabAsset: {fileID: 0}
+--- !u!96 &8306398954779109340
 TrailRenderer:
   serializedVersion: 3
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8454995168890365122}
+  m_GameObject: {fileID: 8829408426237078012}
   m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
@@ -56,7 +140,7 @@ TrailRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 9004799090923515937, guid: 04decf04fce375149bffe1b9335321ae, type: 3}
+  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -94,15 +178,6 @@ TrailRenderer:
         weightedMode: 0
         inWeight: 0.33333334
         outWeight: 0.33333334
-      - serializedVersion: 3
-        time: 0.7421977
-        value: 0.9941883
-        inSlope: 0
-        outSlope: 0
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0
-        outWeight: 0
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
@@ -133,7 +208,7 @@ TrailRenderer:
       atime6: 0
       atime7: 0
       m_Mode: 0
-      m_ColorSpace: 0
+      m_ColorSpace: -1
       m_NumColorKeys: 2
       m_NumAlphaKeys: 2
     numCornerVertices: 0

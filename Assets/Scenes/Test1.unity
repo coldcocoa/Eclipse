@@ -2387,16 +2387,8 @@ MonoBehaviour:
   currentAmmo: 0
   reloadTime: 2
   ammoText: {fileID: 359869559}
-  muzzleFlash: {fileID: 0}
-  bulletSpawnPoint: {fileID: 198453253}
-  muzzleLight: {fileID: 0}
-  bulletTrailPrefab: {fileID: 8454995168890365122, guid: c5dd22f2439ccff4cb0151dc444a6c90,
+  muzzleFlash: {fileID: 8538455091997576435, guid: 543d521d2176ace4aba4667ddca92d97,
     type: 3}
-  impactEffectPrefab: {fileID: 0}
-  impactDecalPrefabs:
-  - {fileID: 0}
-  bulletTrailSpeed: 100
-  impactSounds: []
 --- !u!1 &504744285
 GameObject:
   m_ObjectHideFlags: 0

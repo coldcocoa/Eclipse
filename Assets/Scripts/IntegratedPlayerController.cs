@@ -849,75 +849,53 @@ public class IntegratedPlayerController : MonoBehaviour
     // Shoot 메서드 수정 (레이캐스트 결과를 WeaponController에 전달)
     private void Shoot()
     {
-        // 무기 컨트롤러 참조 확인
-        WeaponController weaponController = GetComponentInChildren<WeaponController>();
-        if (weaponController == null) return;
-        
-        // 이미 발사 중이거나 재장전 중이면 발사 불가
-        if (isShooting || weaponController.IsReloading()) return;
-        
-        // 다음 발사 시간 확인
+        // 사격 딜레이 확인
         if (Time.time < nextFireTime) return;
-        
-        // 발사 상태 설정
-        isShooting = true;
+
+        // 다음 사격 시간 업데이트
         nextFireTime = Time.time + fireRate;
+
+        // 슈팅 애니메이션 재생 (트리거 초기화)
+        ResetAnimationTriggers();
+        animator.SetTrigger(ANIM_PARAM_TRIGGER_SHOOT);
+
+        // 사격 후 처리
+        isShooting = true;
         lastShootTime = Time.time;
-        
-        // 레이캐스트를 통한 충돌 감지
+
+        // 카메라 중앙에서 레이캐스팅
         Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
         RaycastHit hit;
-        
-        Vector3 hitPosition;
-        Vector3 hitNormal = Vector3.forward;
-        bool didHit = false;
-        string hitTag = "";
-        string hitMaterial = "Default";
-        
-        if (Physics.Raycast(ray, out hit, weaponRange))
+        bool didHit = Physics.Raycast(ray, out hit, weaponRange);
+        Vector3 targetPoint = didHit ? hit.point : ray.GetPoint(weaponRange);
+
+        // 무기 컨트롤러를 통해 발사 처리
+        WeaponController weaponController = GetComponentInChildren<WeaponController>();
+        if (weaponController != null)
         {
-            didHit = true;
-            hitPosition = hit.point;
-            hitNormal = hit.normal;
-            hitTag = hit.collider.tag;
-            
-            // 히트한 표면의 재질 결정
-            Renderer renderer = hit.collider.GetComponent<Renderer>();
-            if (renderer != null && renderer.material != null)
+            string hitTag = didHit ? hit.collider.tag : "";
+            string hitMaterial = didHit ? hit.collider.GetComponentInChildren<Renderer>()?.material.name ?? "Default" : "Default";
+
+            // Fire 호출
+            if (weaponController.Fire(targetPoint, didHit ? hit.normal : -ray.direction, didHit, hitTag, hitMaterial))
             {
-                hitMaterial = renderer.material.name;
-            }
-            
-            // 몬스터에 맞았는지 확인 - Monster_AI는 한 개의 매개변수만 받음
-            Monster_AI monsterAI = hit.collider.GetComponentInParent<Monster_AI>();
-            if (monsterAI != null)
-            {
-                hitTag = "Monster";
-                monsterAI.TakeDamage(30); // Monster_AI는 한 개의 매개변수만 받음
-            }
-            
-            // 스켈레톤에 맞았는지 확인 - Skeleton_AI는 두 개의 매개변수를 받음
-            Skeleton_AI skeletonAI = hit.collider.GetComponentInParent<Skeleton_AI>();
-            if (skeletonAI != null)
-            {
-                hitTag = "Monster";
-                skeletonAI.TakeDamage(30, hit.point); // Skeleton_AI는 두 개의 매개변수를 받음
+                // 몬스터에 맞았는지 확인
+                Monster_AI monsterAI = hit.collider?.GetComponentInParent<Monster_AI>();
+                if (monsterAI != null)
+                {
+                    hitTag = "Monster";
+                    monsterAI.TakeDamage(30);
+                }
+
+                // 스켈레톤에 맞았는지 확인
+                Skeleton_AI skeletonAI = hit.collider?.GetComponentInParent<Skeleton_AI>();
+                if (skeletonAI != null)
+                {
+                    hitTag = "Monster";
+                    skeletonAI.TakeDamage(30, hit.point);
+                }
             }
         }
-        else
-        {
-            // 명중하지 않았으면 일정 거리에 힛포인트 설정
-            hitPosition = ray.origin + ray.direction * weaponRange;
-        }
-        
-        // 애니메이션 트리거 (발사 애니메이션)
-        animator.SetTrigger(ANIM_PARAM_TRIGGER_SHOOT);
-        
-        // 무기 컨트롤러에 발사 명령
-        bool fired = weaponController.Fire(hitPosition, hitNormal, didHit, hitTag, hitMaterial);
-        
-        // 발사 후 처리
-        isShooting = false;
     }
 
     // Start() 또는 Awake() 메서드에 추가 - 총구 위치 확인
