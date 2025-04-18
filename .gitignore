@@ -72,3 +72,6 @@ crashlytics-build.properties
 /[Aa]ssets/[Ss]treamingAssets/aa/*
 
 .fake
+
+# Ignore specific large PSD file
+Assets/Asset/ProgressBars\ \#4/Source.psd
