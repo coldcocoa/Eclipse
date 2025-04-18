@@ -201,24 +201,7 @@ public class IntegratedPlayerController : MonoBehaviour
         UpdateAnimationParameters();
 
         // 발사 입력 처리
-        if (Input.GetMouseButtonDown(0))
-        {
-            if (weaponController != null && weaponController.Fire())
-            {
-                // 발사 성공 시 애니메이션
-                animator.SetTrigger("Fire");
-            }
-        }
-        
-        // 장전 입력 처리
-        if (Input.GetKeyDown(KeyCode.R))
-        {
-            if (weaponController != null && weaponController.StartReload())
-            {
-                // 장전 시작 시 애니메이션
-                animator.SetTrigger("Reload");
-            }
-        }
+        HandleWeaponInput();
     }
 
     // =========================================================
@@ -852,77 +835,89 @@ public class IntegratedPlayerController : MonoBehaviour
         animator.SetBool(ANIM_PARAM_IS_AIM_CROUCH_SHOOT, false);
     }
 
-    // 무기 발사 시도 함수 수정
+    // 문제 1 해결: 206번째 줄의 TryFireWeapon() 메서드 수정
+    // 여기선 단순히 Shoot()만 호출하도록 변경합니다
     private void TryFireWeapon()
     {
         if (isAiming && Time.time > nextFireTime)
         {
-            nextFireTime = Time.time + fireRate;
-            
-            // SHOOT 트리거 사용
-            animator.SetTrigger(ANIM_PARAM_TRIGGER_SHOOT);
-            
-            // 상태도 설정 (필요한 경우)
-            if (currentAnimState == PlayerAnimState.AimCrouchIdle)
-            {
-                SetAnimationState(PlayerAnimState.AimCrouchShoot);
-            }
-            else
-            {
-                SetAnimationState(PlayerAnimState.AimShoot);
-            }
-            
-            // 실제 발사 로직
-            FireWeapon();
-            
-            // 마지막 발사 시간 업데이트
-            lastShootTime = Time.time;
+            // Shoot() 메서드에서 발사 관련 모든 처리 진행
+            Shoot();
         }
     }
 
-    // 실제 무기 발사 로직
-    private void FireWeapon()
+    // Shoot 메서드 수정 (레이캐스트 결과를 WeaponController에 전달)
+    private void Shoot()
     {
-        // 화면 중앙에서 레이캐스트 발사 (에임 UI 위치 기준)
-        Ray ray = Camera.main.ScreenPointToRay(new Vector2(Screen.width/2, Screen.height/2));
+        // 무기 컨트롤러 참조 확인
+        WeaponController weaponController = GetComponentInChildren<WeaponController>();
+        if (weaponController == null) return;
         
-        // 몬스터 레이어만 타격하도록 설정
-        int monsterLayer = LayerMask.NameToLayer("Monster");
-        if (monsterLayer >= 0) // 레이어가 존재하는지 확인
+        // 이미 발사 중이거나 재장전 중이면 발사 불가
+        if (isShooting || weaponController.IsReloading()) return;
+        
+        // 다음 발사 시간 확인
+        if (Time.time < nextFireTime) return;
+        
+        // 발사 상태 설정
+        isShooting = true;
+        nextFireTime = Time.time + fireRate;
+        lastShootTime = Time.time;
+        
+        // 레이캐스트를 통한 충돌 감지
+        Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
+        RaycastHit hit;
+        
+        Vector3 hitPosition;
+        Vector3 hitNormal = Vector3.forward;
+        bool didHit = false;
+        string hitTag = "";
+        string hitMaterial = "Default";
+        
+        if (Physics.Raycast(ray, out hit, weaponRange))
         {
-            int layerMask = (1 << monsterLayer); // 몬스터 레이어만 포함
+            didHit = true;
+            hitPosition = hit.point;
+            hitNormal = hit.normal;
+            hitTag = hit.collider.tag;
             
-            // RaycastHit 변수 선언 추가
-            RaycastHit hit;
-            
-            // 이제 이 layerMask를 레이캐스트에 사용
-            if (Physics.Raycast(ray, out hit, weaponRange, layerMask, QueryTriggerInteraction.Collide))
+            // 히트한 표면의 재질 결정
+            Renderer renderer = hit.collider.GetComponent<Renderer>();
+            if (renderer != null && renderer.material != null)
             {
-                // 이제 여기에 들어오는 것은 무조건 몬스터입니다
-                Debug.Log($"몬스터 타격: {hit.transform.name}, 거리: {hit.distance}");
-                
-                // 데미지 처리
-                Monster_AI monster = hit.transform.GetComponent<Monster_AI>();
-                if (monster != null)
-                {
-                    monster.TakeDamage(10f);
-                }
-                
-                // 선택적: 히트 이펙트 표시
-                if (impactEffectPrefab != null)
-                {
-                    Instantiate(impactEffectPrefab, hit.point, Quaternion.LookRotation(hit.normal));
-                }
+                hitMaterial = renderer.material.name;
             }
-            else
+            
+            // 몬스터에 맞았는지 확인 - Monster_AI는 한 개의 매개변수만 받음
+            Monster_AI monsterAI = hit.collider.GetComponentInParent<Monster_AI>();
+            if (monsterAI != null)
             {
-                Debug.Log("몬스터에 맞지 않음");
+                hitTag = "Monster";
+                monsterAI.TakeDamage(30); // Monster_AI는 한 개의 매개변수만 받음
+            }
+            
+            // 스켈레톤에 맞았는지 확인 - Skeleton_AI는 두 개의 매개변수를 받음
+            Skeleton_AI skeletonAI = hit.collider.GetComponentInParent<Skeleton_AI>();
+            if (skeletonAI != null)
+            {
+                hitTag = "Monster";
+                skeletonAI.TakeDamage(30, hit.point); // Skeleton_AI는 두 개의 매개변수를 받음
             }
         }
         else
         {
-            Debug.LogWarning("Monster 레이어가 존재하지 않습니다!");
+            // 명중하지 않았으면 일정 거리에 힛포인트 설정
+            hitPosition = ray.origin + ray.direction * weaponRange;
         }
+        
+        // 애니메이션 트리거 (발사 애니메이션)
+        animator.SetTrigger(ANIM_PARAM_TRIGGER_SHOOT);
+        
+        // 무기 컨트롤러에 발사 명령
+        bool fired = weaponController.Fire(hitPosition, hitNormal, didHit, hitTag, hitMaterial);
+        
+        // 발사 후 처리
+        isShooting = false;
     }
 
     // Start() 또는 Awake() 메서드에 추가 - 총구 위치 확인
@@ -1068,4 +1063,52 @@ public class IntegratedPlayerController : MonoBehaviour
             staminaSlider.value = currentStamina / maxStamina;
         }
     }
+
+    // TryFireWeapon 메서드는 삭제하고 대신 HandleWeaponInput에서 직접 처리
+    private void HandleWeaponInput()
+    {
+        // R키 - 재장전
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            // 무기 컨트롤러 참조 확인
+            WeaponController weaponController = GetComponentInChildren<WeaponController>();
+            if (weaponController != null && !weaponController.IsReloading())
+            {
+                // 재장전 시작
+                if (weaponController.StartReload())
+                {
+                    // 재장전 애니메이션 재생
+                    if (animator != null)
+                    {
+                        animator.SetTrigger("Reload");
+                    }
+                }
+            }
+        }
+        
+        // 마우스 왼쪽 버튼 또는 좌측 Ctrl - 발사
+        if (Input.GetMouseButton(0) || Input.GetKey(KeyCode.LeftControl))
+        {
+            if (isAiming && Time.time > nextFireTime)
+            {
+                // 직접 발사 처리
+                Shoot();
+            }
+        }
+        
+        // 우측 마우스 버튼 - 조준
+        if (Input.GetMouseButtonDown(1))
+        {
+            isAiming = true;
+            lastAimInputTime = Time.time;
+        }
+        
+        // 조준 해제 (마우스 오른쪽 버튼 해제 시)
+        if (Input.GetMouseButtonUp(1))
+        {
+            isAiming = false;  // 즉시 조준 해제 (코루틴 사용 없이)
+        }
+    }
+
+    // TryFireWeapon 메서드는 삭제
 }
