@@ -138,6 +138,8 @@ public class IntegratedPlayerController : MonoBehaviour
     [Header("무기 시스템")]
     [SerializeField] private WeaponController weaponController;
 
+    private FootstepManager footstepManager;
+
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
@@ -161,6 +163,17 @@ public class IntegratedPlayerController : MonoBehaviour
         currentStamina = maxStamina;
 
         CheckMuzzlePoint();
+    }
+
+    private void Start()
+    {
+        // FootstepManager 참조 찾기
+        footstepManager = GetComponentInChildren<FootstepManager>();
+        if (footstepManager == null)
+        {
+            // 찾지 못했다면 전체 계층에서 검색
+            footstepManager = FindObjectOfType<FootstepManager>();
+        }
     }
 
     private void Update()
@@ -1064,5 +1077,16 @@ public class IntegratedPlayerController : MonoBehaviour
         }
     }
 
-    // TryFireWeapon 메서드는 삭제
+    // 애니메이션 이벤트에서 호출되는 함수
+    public void PlayFootstep()
+    {
+        if (footstepManager != null)
+        {
+            footstepManager.PlayFootstep();
+        }
+        else
+        {
+            Debug.LogWarning("FootstepManager를 찾을 수 없습니다!");
+        }
+    }
 }

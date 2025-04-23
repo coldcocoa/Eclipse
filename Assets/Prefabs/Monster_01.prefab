@@ -44,8 +44,8 @@ GameObject:
   - component: {fileID: 1657762345597568734}
   - component: {fileID: 5671560840534266512}
   - component: {fileID: 8419667877402533697}
-  - component: {fileID: 2154380087902399058}
-  - component: {fileID: 8051341767839946971}
+  - component: {fileID: -8639578393574934640}
+  - component: {fileID: -6009176421011010926}
   m_Layer: 7
   m_Name: Monster_01
   m_TagString: Untagged
@@ -63,7 +63,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 668.31, y: 164.11, z: 801.2056}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.7, y: 0.7, z: 0.7}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3162111097994063659}
@@ -155,7 +155,7 @@ MonoBehaviour:
   lootPrefab: {fileID: 1556632009200714274, guid: 05e9acafc63eb2d4fb11f7f9bc5d6f5c,
     type: 3}
   goldEffectPrefab: {fileID: 0}
---- !u!54 &2154380087902399058
+--- !u!54 &-8639578393574934640
 Rigidbody:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -182,7 +182,7 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
---- !u!65 &8051341767839946971
+--- !u!65 &-6009176421011010926
 BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -197,12 +197,12 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 3, y: 3, z: 3}
-  m_Center: {x: 0, y: 0.45, z: 0}
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0.5, z: 0}
 --- !u!1001 &3165030883042181677
 PrefabInstance:
   m_ObjectHideFlags: 0

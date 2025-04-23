@@ -34,6 +34,24 @@ MonoBehaviour:
       clip: {fileID: 8300000, guid: 99cc49e2c75174a00b9ded676f45afc8, type: 3}
       volume: 1
       pitch: 1
+  - groupName: footstep
+    sounds:
+    - soundName: FootstepGrass
+      clip: {fileID: 8300000, guid: fc32c6fd07980144996b811e5d1f2971, type: 3}
+      volume: 1.08
+      pitch: 0.1
+    - soundName: FootstepGrassRun
+      clip: {fileID: 8300000, guid: 3ec9ef3892d02044a9d62e412eb45ffb, type: 3}
+      volume: 1
+      pitch: 1
+    - soundName: FootstepStone
+      clip: {fileID: 0}
+      volume: 1
+      pitch: 1
+    - soundName: FootstepStoneRun
+      clip: {fileID: 0}
+      volume: 1
+      pitch: 1
   uiSounds:
     groupName: UI
     sounds:
