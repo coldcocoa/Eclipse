@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
 using System;
+using TMPro; // TextMeshPro 사용 위해 추가
 
 [RequireComponent(typeof(NavMeshAgent))]
 public class Skeleton_AI : MonoBehaviour
@@ -33,6 +34,8 @@ public class Skeleton_AI : MonoBehaviour
     [SerializeField] private float rotationSpeed = 180f; // 초당 180도 회전 (1초에 완전히 돌 수 있음)
     [SerializeField] private float targetLostTimeout = 1f; // 플레이어 시야에서 사라진 후 1초간 추적
     
+    [Header("Kill UI")]
+    public KillCount_Dungeon killCount_Dungeon;
     // 애니메이터 파라미터 해시값 (성능 최적화)
     private int speedHHash;
     private int speedVHash;
@@ -58,6 +61,10 @@ public class Skeleton_AI : MonoBehaviour
     
     // 이벤트 (MonsterDrop 등에서 사용)
     public event Action OnMonsterDeath;
+
+    [Header("UI 연결")]
+    [Tooltip("킬 카운트를 표시할 TextMeshPro UI 요소 (Inspector에서 할당)")]
+    [SerializeField] private TextMeshProUGUI killCountText;
     
     private void Awake()
     {
@@ -101,6 +108,27 @@ public class Skeleton_AI : MonoBehaviour
         if (parentSpawnPoint != null)
         {
             SetDifficultyMultipliers(1);
+        }
+        
+        // KillCount_Dungeon 오브젝트 자동 찾기
+        if (killCount_Dungeon == null)
+        {
+            // 이름으로 오브젝트 찾기
+            GameObject killCountObj = GameObject.Find("KillCount_Dungeon");
+            if (killCountObj != null)
+            {
+                killCount_Dungeon = killCountObj.GetComponent<KillCount_Dungeon>();
+                Debug.Log("스켈레톤 AI: KillCount_Dungeon 오브젝트를 찾아 연결했습니다.");
+            }
+            else
+            {
+                // 이름으로 찾지 못한 경우 타입으로 찾기 시도
+                killCount_Dungeon = FindObjectOfType<KillCount_Dungeon>();
+                if (killCount_Dungeon != null)
+                    Debug.Log("스켈레톤 AI: KillCount_Dungeon 컴포넌트를 타입으로 찾아 연결했습니다.");
+                else
+                    Debug.LogWarning("스켈레톤 AI: KillCount_Dungeon을 찾을 수 없습니다!");
+            }
         }
     }
     
@@ -277,14 +305,19 @@ public class Skeleton_AI : MonoBehaviour
         // 사망 사운드
         if (audioSource != null && deathSound != null)
         {
-            audioSource.clip = deathSound;
-            audioSource.Play();
+            audioSource.PlayOneShot(deathSound);
         }
         
         // 사망 이펙트
         if (deathVFX != null)
         {
-            Instantiate(deathVFX, transform.position + Vector3.up, Quaternion.identity);
+            Instantiate(deathVFX, transform.position, Quaternion.identity);
+        }
+        
+        
+        if (killCount_Dungeon != null)
+        {
+            killCount_Dungeon.UpdateKillCountUI_Skeleton();
         }
         
         // NavMesh 비활성화

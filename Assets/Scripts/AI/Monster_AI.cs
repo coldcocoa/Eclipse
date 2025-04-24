@@ -3,6 +3,7 @@ using UnityEngine.AI; // NavMeshAgent 사용을 위해 추가
 using System.Collections.Generic; // List 사용
 using System;
 using System.Collections;
+using TMPro; // TextMeshPro 사용 위해 추가
 
 [RequireComponent(typeof(NavMeshAgent))] // NavMeshAgent 컴포넌트 강제
 [RequireComponent(typeof(Animator))]    // Animator 컴포넌트 강제
@@ -27,8 +28,8 @@ public class Monster_AI : MonoBehaviour
     [SerializeField] private Transform uiSpawnPoint; // UI 생성 위치 (옵션, 없으면 몬스터 루트 사용)
 
     private MonsterHealthUI healthBarInstance; // 생성된 체력 바 인스턴스 참조
-    // ------------------------
 
+    public KillCount_Dungeon killCount_Dungeon;
     // 내부 변수
     public float currentHp; // public 유지 (MonsterHealthUI에서 접근)
     private Transform player; // 플레이어 Transform
@@ -105,6 +106,27 @@ public class Monster_AI : MonoBehaviour
     void Start()
     {
         agent.stoppingDistance = attackRange * 0.8f; // 공격 범위보다 약간 앞에서 멈추도록 설정
+
+        // KillCount_Dungeon 오브젝트 자동 찾기
+        if (killCount_Dungeon == null)
+        {
+            // 이름으로 오브젝트 찾기
+            GameObject killCountObj = GameObject.Find("KillCount_Dungeon");
+            if (killCountObj != null)
+            {
+                killCount_Dungeon = killCountObj.GetComponent<KillCount_Dungeon>();
+                Debug.Log("슬라임 AI: KillCount_Dungeon 오브젝트를 찾아 연결했습니다.");
+            }
+            else
+            {
+                // 이름으로 찾지 못한 경우 타입으로 찾기 시도
+                killCount_Dungeon = FindObjectOfType<KillCount_Dungeon>();
+                if (killCount_Dungeon != null)
+                    Debug.Log("슬라임 AI: KillCount_Dungeon 컴포넌트를 타입으로 찾아 연결했습니다.");
+                else
+                    Debug.LogWarning("슬라임 AI: KillCount_Dungeon을 찾을 수 없습니다!");
+            }
+        }
     }
 
     void Update()
@@ -498,41 +520,46 @@ public class Monster_AI : MonoBehaviour
     private void Die()
     {
         if (isDead) return;
-        
         isDead = true;
-        
+
         // 상태 전환
         currentState = MonsterState.Dead;
-        
+
         // 사망 애니메이션
-        animator.SetTrigger("Die");
-        
+        animator.SetTrigger("Die"); // "Die" 트리거 이름 확인
+
+        // KillCount_Dungeon으로 슬라임 킬 카운트 증가
+        if (killCount_Dungeon != null)
+        {
+            killCount_Dungeon.UpdateKillCountUI_Slime();
+        }
+
         // 네비게이션 비활성화
         agent.enabled = false;
-        
+
         // 콜라이더 비활성화
         Collider[] colliders = GetComponents<Collider>();
         foreach (Collider col in colliders)
         {
             col.enabled = false;
         }
-        
+
         // 체력바 파괴
         if (healthBarInstance != null)
         {
             Destroy(healthBarInstance.gameObject);
         }
-        
+
         // 몬스터 사망 이벤트 발생
         OnMonsterDeath?.Invoke();
-        
+
         // 스폰 포인트에 알림
         if (parentSpawnPoint != null)
         {
             parentSpawnPoint.OnMonsterDeath(gameObject);
         }
-        
-        // Destroy 제거하고 코루틴으로 대체
+
+        // 비활성화 코루틴 시작
         StartCoroutine(DelayedDeactivation(3f));
     }
 
@@ -545,4 +572,10 @@ public class Monster_AI : MonoBehaviour
         // 이미 풀에 반환되었을 수 있으므로 추가 체크는 하지 않음
         // 몬스터 매니저와 스폰 포인트가 이미 처리함
     }
+
+    // 게임 시작 또는 필요시 카운터 초기화 함수 (외부에서 호출 가능)
+    //public static void ResetKillCount()
+    //{
+    //    killCount_Dungeon.UpdateKillCountUI(); 
+    //}
 }

@@ -148,13 +148,4 @@ public class MonsterManager : MonoBehaviour
                 return slimePool;
         }
     }
-}
-
-// 몬스터 타입 열거형
-public enum MonsterType
-{
-    Slime,
-    Skeleton,
-    Reaper,  // 사신 몬스터
-    Boss     // 일반적인 보스 타입
 } 

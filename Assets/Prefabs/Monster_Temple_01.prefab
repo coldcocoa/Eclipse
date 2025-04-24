@@ -44,6 +44,7 @@ GameObject:
   - component: {fileID: 1657762345597568734}
   - component: {fileID: 5671560840534266512}
   - component: {fileID: 8419667877402533697}
+  - component: {fileID: -7696470806012458207}
   - component: {fileID: 2154380087902399058}
   - component: {fileID: 8051341767839946971}
   m_Layer: 7
@@ -138,6 +139,7 @@ MonoBehaviour:
   damageNumberPrefab: {fileID: 7447602737212632213, guid: 93516d0f8e7564841af4ea6b70bfb9f8,
     type: 3}
   uiSpawnPoint: {fileID: 9110578724399926287}
+  killCount_Dungeon: {fileID: 0}
   currentHp: 0
 --- !u!114 &8419667877402533697
 MonoBehaviour:
@@ -155,6 +157,19 @@ MonoBehaviour:
   lootPrefab: {fileID: 1556632009200714274, guid: 05e9acafc63eb2d4fb11f7f9bc5d6f5c,
     type: 3}
   goldEffectPrefab: {fileID: 0}
+--- !u!114 &-7696470806012458207
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5680161158443578165}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d84816aa4339644286c22253ae1f7b6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  killCountText: {fileID: 0}
 --- !u!54 &2154380087902399058
 Rigidbody:
   m_ObjectHideFlags: 0

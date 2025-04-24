@@ -140,6 +140,16 @@ public class IntegratedPlayerController : MonoBehaviour
 
     private FootstepManager footstepManager;
 
+    [Header("애니메이션 보간 설정")]
+    [SerializeField] private float speedSmoothTime = 0.1f; // 속도 변화 부드러움
+    [SerializeField] private float directionSmoothTime = 0.2f; // 방향 변화 부드러움
+
+    // 보간에 사용할 변수들 - 필드 영역에 추가
+    private float currentAnimSpeed = 0f;
+    private float speedVelocity = 0f; // SmoothDamp용 속도 변수
+    private float currentAnimDirection = 0f;
+    private float directionVelocity = 0f; // SmoothDamp용 방향 변수 
+
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
@@ -211,7 +221,7 @@ public class IntegratedPlayerController : MonoBehaviour
         ApplyAnimationState();
 
         // 애니메이션 파라미터 업데이트 (매 프레임)
-        UpdateAnimationParameters();
+        UpdateAnimation();
 
         // 발사 입력 처리
         HandleWeaponInput();
@@ -955,48 +965,46 @@ public class IntegratedPlayerController : MonoBehaviour
     }
 
     // Update 함수 수정 (애니메이션 파라미터 업데이트 호출)
-    private void UpdateAnimationParameters()
+    private void UpdateAnimation()
     {
-        // 이동 입력 감지
+        // 이동 방향 및 속도 계산
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
+        bool sprint = Input.GetKey(KeyCode.LeftShift);
         
-        // 파라미터 값 설정
-        animator.SetFloat(ANIM_PARAM_HORIZONTAL, h);
-        animator.SetFloat(ANIM_PARAM_VERTICAL, v);
-        
-        // 이동 속도 계산 (정규화된 0~1 값)
+        // 목표 속도 계산 (기존 코드는 그대로 유지)
         float targetSpeed = 0f;
+        if (v > 0)
+            targetSpeed = sprint ? 1.0f : 0.5f; // 전진 + 달리기/걷기
+        else if (v < 0)
+            targetSpeed = 0.3f; // 후진 (항상 느리게)
+        else if (Mathf.Abs(h) > 0.1f) 
+            targetSpeed = sprint ? 0.8f : 0.4f; // 좌우 이동 (전진보다 약간 느리게)
         
-        if (Mathf.Abs(h) > 0.1f || Mathf.Abs(v) > 0.1f)
-        {
-            // 이동 중일 때 속도 계산
-            if (isSprinting)
-                targetSpeed = 1.0f; // 달리기
-            else if (isAiming)
-                targetSpeed = 0.5f; // 에임 모드 걷기
-            else
-                targetSpeed = 0.5f; // 일반 걷기
-            
-            // 앉은 상태면 속도 감소
-            if (isCrouching)
-                targetSpeed *= 0.6f;
-        }
+        // 부드러운 속도 보간 추가
+        currentAnimSpeed = Mathf.SmoothDamp(currentAnimSpeed, targetSpeed, ref speedVelocity, speedSmoothTime);
         
-        // 이동 방향 계산 (전후좌우)
+        // 이동 방향 계산 (전후좌우) - 기존 코드
         float direction = 0f;
         if (Mathf.Abs(h) > 0.1f)
             direction = h; // 좌우 입력이 있으면 해당 방향
         else if (v < -0.1f)
             direction = -0.5f; // 후진 (방향값 -0.5로 설정)
         
+        // 부드러운 방향 보간 추가
+        currentAnimDirection = Mathf.SmoothDamp(currentAnimDirection, direction, ref directionVelocity, directionSmoothTime);
+        
         // 주요 상태 설정
         animator.SetBool(ANIM_PARAM_IS_AIMING, isAiming);
         animator.SetBool(ANIM_PARAM_IS_CROUCHING, isCrouching);
         
-        // 매 프레임 파라미터 업데이트
-        animator.SetFloat(ANIM_PARAM_SPEED, targetSpeed);
-        animator.SetFloat(ANIM_PARAM_DIRECTION, direction);
+        // 보간된 값으로 애니메이터 파라미터 업데이트
+        animator.SetFloat(ANIM_PARAM_SPEED, currentAnimSpeed);
+        animator.SetFloat(ANIM_PARAM_DIRECTION, currentAnimDirection);
+        
+        // 수직/수평 입력값도 부드럽게 전달 (만약 사용하고 있다면)
+        animator.SetFloat(ANIM_PARAM_VERTICAL, v);
+        animator.SetFloat(ANIM_PARAM_HORIZONTAL, h);
     }
 
     // 체력을 최대값으로 초기화
