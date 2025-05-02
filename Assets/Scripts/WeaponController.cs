@@ -317,6 +317,15 @@ public class WeaponController : MonoBehaviour
             SpawnHitEffect(hit.point, hit.normal);
             return true;
         }
+
+        // 보스에 맞았는지 확인
+        Boss_AI bossAI = hit.collider?.GetComponentInParent<Boss_AI>();
+        if (bossAI != null)
+        {
+            bossAI.TakeDamage(30);
+            SpawnHitEffect(hit.point, hit.normal);
+            return true;
+        }
         
         return false;
     }
