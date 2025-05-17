@@ -126,7 +126,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b72e7f6bafccbae4291e59519c71a8c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHp: 30
+  maxHp: 60
   moveSpeed: 3.5
   detectionRange: 5
   attackRange: 2
@@ -138,6 +138,7 @@ MonoBehaviour:
   damageNumberPrefab: {fileID: 7447602737212632213, guid: 93516d0f8e7564841af4ea6b70bfb9f8,
     type: 3}
   uiSpawnPoint: {fileID: 9110578724399926287}
+  killCount_Dungeon: {fileID: 0}
   currentHp: 0
 --- !u!114 &8419667877402533697
 MonoBehaviour:

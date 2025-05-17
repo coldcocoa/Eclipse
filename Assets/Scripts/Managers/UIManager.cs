@@ -1,4 +1,4 @@
-using UnityEngine;
+  using UnityEngine;
 using UnityEngine.UI; // Slider, Text 등 사용
 using System.Collections; // Coroutine 사용
 using TMPro; // TextMeshPro 사용 시 추가
@@ -246,7 +246,7 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    private void AddMessageToHistory(string message)
+    public void AddMessageToHistory(string message)
     {
         if (messageHistory.Count >= maxHistoryLines)
         {

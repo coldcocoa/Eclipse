@@ -322,6 +322,11 @@ public class Monster_AI : MonoBehaviour
                 // Destroy 제거하고 코루틴으로 대체
                 StartCoroutine(DelayedDeactivation(3f));
 
+                // 킬 카운트 UI 갱신 (슬라임)
+                var killCount = FindObjectOfType<KillCount_Dungeon>();
+                if (killCount != null)
+                    killCount.UpdateKillCountUI_Slime();
+
                 break;
         }
     }

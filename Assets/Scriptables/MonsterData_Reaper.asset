@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   monsterDataId: Reaper
   monsterName: Reaper
-  monsterType: 3
+  monsterType: 2
   minGold: 400
   maxGold: 600
   dropItems:

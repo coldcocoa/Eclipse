@@ -50,40 +50,43 @@ public class LootableObject : MonoBehaviour
         if (!isBeingLooted) return;
 
         bool lootedAll = true;
-        // InventorySystem 참조 (싱글톤 또는 다른 방식으로)
         InventorySystem inventory = InventorySystem.Instance;
         if (inventory != null)
         {
             foreach (var itemPair in containedItems)
             {
-                if (!inventory.AddItem(itemPair.Key, itemPair.Value))
+                if (inventory.AddItem(itemPair.Key, itemPair.Value))
                 {
-                    // 하나라도 추가 실패 시 (인벤토리 가득 참)
+                    // 아이템 획득 로그 추가
+                    if (UIManager.Instance != null)
+                    {
+                        UIManager.Instance.ShowMessage($"{itemPair.Key.itemName} x{itemPair.Value} 획득!");
+                        UIManager.Instance.AddMessageToHistory($"{itemPair.Key.itemName} x{itemPair.Value} 획득!");
+                    }
+                }
+                else
+                {
                     lootedAll = false;
                     UIManager.Instance.ShowMessage("인벤토리가 가득 찼습니다.");
-                    break; // 루팅 중단
+                    break;
                 }
             }
 
             if (lootedAll)
             {
                 Debug.Log("루팅 완료!");
-                containedItems.Clear(); // 내용물 비우기
-                Destroy(gameObject); // 오브젝트 제거
+                containedItems.Clear();
+                Destroy(gameObject);
             }
             else
             {
-                // 일부만 루팅된 경우, isBeingLooted를 false로 되돌려 다시 루팅 시도 가능하게 함
                 isBeingLooted = false;
-                // 실패한 아이템부터 다시 루팅 시도할 수 있도록 목록 유지
-                // (더 복잡한 로직: 성공한 아이템만 목록에서 제거)
-                // 여기서는 간단히 isBeingLooted만 해제
             }
         }
         else
         {
             Debug.LogError("InventorySystem을 찾을 수 없습니다!");
-            isBeingLooted = false; // 오류 발생 시 루팅 상태 해제
+            isBeingLooted = false;
         }
     }
 

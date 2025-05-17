@@ -30,6 +30,8 @@ public class Boss_AI : MonoBehaviour
     private int lastAttackIndex = -1;
     private float attackTimer = 0f;
 
+    [SerializeField] private GameObject activateOnDeath; // Inspector에서 할당
+
     private void Awake()
     {
         if (animator == null) animator = GetComponentInChildren<Animator>();
@@ -173,7 +175,17 @@ public class Boss_AI : MonoBehaviour
         isDead = true;
         animator.SetTrigger(deadHash);
         SetMoveAnim(0f, 0f);
+
+        // 오브젝트 활성화
+        if (activateOnDeath != null)
+            activateOnDeath.SetActive(true);
+
         // 사망 후 추가 처리
+
+        // 킬 카운트 UI 갱신 (리퍼/보스)
+        var killCount = FindObjectOfType<KillCount_Dungeon>();
+        if (killCount != null)
+            killCount.UpdateKillCountUI_Reaper();
 
         // 3.5초 뒤에 오브젝트 비활성화
         StartCoroutine(DisableAfterDelay(3.5f));
