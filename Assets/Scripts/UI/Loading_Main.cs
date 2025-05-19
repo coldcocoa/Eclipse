@@ -35,13 +35,24 @@ public class Loading_Main : MonoBehaviour
         .SetEase(Ease.Linear)
         .OnComplete(() => {
             // 100%가 되면 Test1 씬으로 이동
+            // 씬 로드 후 플레이어 위치 이동 함수 등록
+            SceneManager.sceneLoaded += OnTest1Loaded;
             SceneManager.LoadScene("Test1");
         });
     }
 
-   
-    
-   
-    
-    
+    // Test1 씬이 로드된 직후 호출되는 함수
+    private void OnTest1Loaded(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.name == "Test1")
+        {
+            MainScenePlayerRespawner respawner = GameObject.FindObjectOfType<MainScenePlayerRespawner>();
+            if (respawner != null)
+            {
+                respawner.Point_Player();
+            }
+        }
+        // 이벤트 중복 방지
+        SceneManager.sceneLoaded -= OnTest1Loaded;
+    }
 } 

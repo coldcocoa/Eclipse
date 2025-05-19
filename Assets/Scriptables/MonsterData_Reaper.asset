@@ -19,7 +19,7 @@ MonoBehaviour:
   maxGold: 600
   dropItems:
   - item: {fileID: 11400000, guid: 28c109fecd3f4794fa8a339eeba0eb25, type: 2}
-    dropChance: 20
+    dropChance: 100
     minAmount: 2
     maxAmount: 6
     bossOnly: 0

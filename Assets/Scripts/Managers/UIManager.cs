@@ -1,4 +1,4 @@
-  using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI; // Slider, Text 등 사용
 using System.Collections; // Coroutine 사용
 using TMPro; // TextMeshPro 사용 시 추가
@@ -56,7 +56,7 @@ public class UIManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            // DontDestroyOnLoad(gameObject);
+            DontDestroyOnLoad(gameObject); // 씬 전환 시 파괴되지 않게 설정
         }
         else
         {
